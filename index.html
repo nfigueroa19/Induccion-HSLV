@@ -5,191 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Re-inducción HSLV — Diagnóstico ADN Susana</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
-<style>
-  :root {
-    --color-bg: #FFFFFF;
-    --color-surface: #FFFFFF;
-    --color-ink: #16241A;
-    --color-ink-soft: #4B5A45;
-    --color-primary: #327531;
-    --color-accent: #76B82A;
-    --color-navy: #29235C;
-    --color-border: #DCE3D5;
-    --color-field-bg: #F7F8F4;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--color-bg);
-    color: var(--color-ink);
-  }
-
-  .page {
-    position: relative;
-    max-width: 480px;
-    margin: 0 auto;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .topbar {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 18px 20px 14px;
-    border-bottom: 3px solid var(--color-accent);
-    background: var(--color-bg);
-  }
-  .mark {
-    width: 64px; height: 64px;
-    flex-shrink: 0;
-  }
-  .mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .wordmark { line-height: 1.15; }
-  .wordmark .name { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: var(--color-navy); }
-  .wordmark .sub { font-size: 11px; color: var(--color-ink-soft); }
-
-  main {
-    position: relative;
-    padding: 26px 24px 20px;
-    flex: 1;
-  }
-
-  .watermark {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 420px;
-    max-width: 90vw;
-    height: auto;
-    opacity: 0.07;
-    pointer-events: none;
-    user-select: none;
-    z-index: 0;
-  }
-
-  .hero { position: relative; z-index: 1; }
-
-  .eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-primary);
-    font-weight: 700;
-    margin: 0 0 10px;
-  }
-  h1 {
-    font-family: Georgia, Cambria, "Times New Roman", serif;
-    font-size: 26px;
-    line-height: 1.25;
-    margin: 0 0 10px;
-    text-wrap: balance;
-  }
-  .lede {
-    font-size: 14.5px;
-    line-height: 1.6;
-    color: var(--color-ink-soft);
-    margin: 0 0 28px;
-  }
-
-  form { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; }
-
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .field .hint {
-    font-size: 12px;
-    color: var(--color-ink-soft);
-    margin: 4px 0 0;
-  }
-
-  input[type="text"],
-  input[type="number"],
-  select,
-  textarea {
-    width: 100%;
-    font: inherit;
-    font-size: 15px;
-    color: var(--color-ink);
-    background: var(--color-field-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(118, 184, 42, 0.25);
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 160px;
-    line-height: 1.6;
-  }
-
-  .counter {
-    font-size: 12px;
-    color: var(--color-ink-soft);
-    text-align: right;
-    margin-top: 4px;
-  }
-
-  .confidential {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    background: var(--color-field-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-  .confidential .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--color-navy);
-    margin-top: 5px;
-    flex-shrink: 0;
-  }
-  .confidential p {
-    font-size: 12px;
-    line-height: 1.55;
-    color: var(--color-ink-soft);
-    margin: 0;
-  }
-
-  button.submit {
-    display: block;
-    width: 100%;
-    text-align: center;
-    background: var(--color-primary);
-    color: #fff;
-    font-weight: 700;
-    font-size: 16px;
-    padding: 15px 20px;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    margin-top: 4px;
-  }
-  button.submit:active { transform: scale(0.99); }
-
-  .status {
-    font-size: 13px;
-    text-align: center;
-    margin-top: 10px;
-    min-height: 18px;
-  }
-</style>
+<link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 <div class="page">
@@ -211,21 +27,21 @@
       <p class="lede">Completa tus datos y responde la pregunta con tus propias palabras.</p>
     </div>
 
-    <form id="form-adn">
+    <form id="form-adn" autocomplete="off">
       <div class="field">
         <label for="nombre">Nombre completo</label>
-        <input type="text" id="nombre" name="nombre" autocomplete="name" required />
+        <input type="text" id="nombre" name="nombre" autocomplete="off" required />
       </div>
 
       <div class="field">
         <label for="cedula">Número de cédula</label>
-        <input type="number" id="cedula" name="cedula" inputmode="numeric" required />
+        <input type="number" id="cedula" name="cedula" inputmode="numeric" autocomplete="off" required />
         <p class="hint">Sin puntos ni espacios.</p>
       </div>
 
       <div class="field">
         <label for="area">Área o servicio</label>
-        <select id="area" name="area" required>
+        <select id="area" name="area" autocomplete="off" required>
           <option value="" disabled selected>Selecciona tu área o servicio</option>
           <optgroup label="Asistencial">
             <option>Urgencias</option>
@@ -265,8 +81,8 @@
       </div>
 
       <div class="field">
-        <label for="pregunta">¿Cómo aplicas la cultura del HSLV en tu día a día?</label>
-        <textarea id="pregunta" name="pregunta" maxlength="1200"></textarea>
+        <label for="pregunta">¿Quién eres como persona y como trabajador?</label>
+        <textarea id="pregunta" name="pregunta" maxlength="1200" autocomplete="off"></textarea>
         <p class="counter"><span id="contador">0</span>/1200</p>
       </div>
 
@@ -282,19 +98,6 @@
 
 </div>
 
-<script>
-  const textarea = document.getElementById('pregunta');
-  const contador = document.getElementById('contador');
-  textarea.addEventListener('input', () => {
-    contador.textContent = textarea.value.length;
-  });
-
-  const form = document.getElementById('form-adn');
-  const status = document.getElementById('status');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    status.textContent = 'Formulario en construcción: aún no está conectado a un backend.';
-  });
-</script>
+<script src="js/script.js"></script>
 </body>
 </html>
