@@ -1,0 +1,33 @@
+# Mantiene despierto el servicio gratuito de Render.
+#
+# El plan gratuito duerme tras ~15 min sin tráfico, y con él se detiene el
+# worker embebido que drena la cola de diagnósticos. Este ping lo evita.
+#
+# Requiere el secreto de repositorio API_URL con la URL base del servicio
+# (ej. https://hslv-api.onrender.com). Sin él, el job termina sin hacer nada.
+#
+# Nota: GitHub retrasa o suspende los cron de repos sin actividad. Para el día
+# del evento conviene tener además UptimeRobot o cron-job.org como respaldo.
+
+name: keepalive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Despertar la API
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "Secreto API_URL sin configurar; nada que hacer."
+            exit 0
+          fi
+          codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$API_URL/healthz")
+          echo "GET $API_URL/healthz -> $codigo"
+          [ "$codigo" = "200" ]

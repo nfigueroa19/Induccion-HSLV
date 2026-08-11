@@ -82,13 +82,23 @@
 
       <div class="field">
         <label for="pregunta">¿Quién eres como persona y como trabajador?</label>
-        <textarea id="pregunta" name="pregunta" maxlength="1200" autocomplete="off"></textarea>
+        <textarea id="pregunta" name="pregunta" minlength="120" maxlength="1200" autocomplete="off" required></textarea>
         <p class="counter"><span id="contador">0</span>/1200</p>
       </div>
 
       <div class="confidential">
         <div class="dot" aria-hidden="true"></div>
         <p>Tu respuesta y tu diagnóstico son estrictamente confidenciales. Solo se usan datos agregados y anónimos para fines de mejora institucional.</p>
+      </div>
+
+      <!-- TEXTO PENDIENTE DE VALIDAR POR JURÍDICA. Requisito de la Ley 1581 de
+           2012: no se pueden recoger cédula y nombre sin autorización expresa.
+           Ver Segundo Cerebro/01 - Arquitectura/Confidencialidad y privacidad.md -->
+      <div class="field consent">
+        <label for="autorizacion">
+          <input type="checkbox" id="autorizacion" name="autorizacion" required />
+          <span>Autorizo al Hospital Susana López de Valencia E.S.E. a tratar mis datos personales con el fin exclusivo de generar mi diagnóstico de re-inducción y reportes agregados de mejora institucional, conforme a la Ley 1581 de 2012.</span>
+        </label>
       </div>
 
       <button class="submit" type="submit">Enviar respuesta</button>

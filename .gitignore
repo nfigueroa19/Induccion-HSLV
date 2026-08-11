@@ -1,0 +1,19 @@
+# Secretos — nunca versionar
+.env
+backend/.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Obsidian: la config del vault sí se versiona, el estado local no
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Sistema
+.DS_Store
+Thumbs.db

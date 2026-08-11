@@ -1,0 +1,25 @@
+# Despliegue del frontend estático. Solo se publica web/ — nunca backend/,
+# Segundo Cerebro/ ni .claude/.
+# Ver: Segundo Cerebro/01 - Arquitectura/Arquitectura de despliegue y pipeline asincrono.md
+
+[build]
+  publish = "web"
+  command = ""
+
+# connect-src apunta al servicio de API en Render. Si ese servicio cambia de
+# nombre, hay que actualizarlo AQUÍ y en la constante API de web/js/script.js:
+# si no coinciden, el navegador bloquea el envío del formulario.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://induccion-hslv-api.onrender.com; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=(), interest-cohort=()"
+
+# Los assets llevan hash de contenido en Netlify; el HTML no se cachea para que
+# un cambio de copy o de pregunta se vea de inmediato el día del evento.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
