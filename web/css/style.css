@@ -205,3 +205,176 @@ button.submit:active { transform: scale(0.99); }
   margin-top: 10px;
   min-height: 18px;
 }
+
+button.submit[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------------------
+   Resultado del diagnóstico
+   La silueta del logo se usa como máscara y se llena de abajo hacia arriba
+   según el porcentaje: el propio símbolo institucional es el indicador.
+   --------------------------------------------------------------------------- */
+
+/* El atributo hidden aplica display:none, pero cualquier regla de display en
+   el elemento lo pisa. Sin esto, el panel de carga se queda visible debajo
+   del resultado. */
+[hidden] { display: none !important; }
+
+#modal {
+  width: min(100% - 24px, 460px);
+  max-height: 92vh;
+  overflow-y: auto;
+  border: none;
+  border-radius: 18px;
+  padding: 26px 22px 22px;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  box-shadow: 0 24px 60px rgba(22, 36, 26, 0.28);
+}
+#modal::backdrop {
+  background: rgba(22, 36, 26, 0.55);
+}
+#modal h2 {
+  font-family: Georgia, Cambria, "Times New Roman", serif;
+  font-size: 21px;
+  line-height: 1.25;
+  margin: 0;
+  color: var(--color-navy);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+#modal h3 {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 6px;
+}
+#modal p { margin: 0; }
+
+.gauge,
+.pulso {
+  position: relative;
+  width: 128px;
+  aspect-ratio: 447 / 306;
+  flex-shrink: 0;
+}
+.gauge span,
+.pulso span {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url("../Assets/Logo/hslv-mark.png") no-repeat center / contain;
+  mask: url("../Assets/Logo/hslv-mark.png") no-repeat center / contain;
+}
+.gauge-base { background: #DFE6D8; }
+.gauge-fill {
+  background: linear-gradient(to top, var(--color-primary), var(--color-accent));
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-cargando {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0 6px;
+}
+.modal-cargando p { font-size: 13.5px; color: var(--color-ink-soft); }
+.pulso .gauge-base {
+  background: var(--color-accent);
+  animation: latido 1.6s ease-in-out infinite;
+}
+@keyframes latido {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.85; }
+}
+
+.medidor {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 10px 0 22px;
+}
+.cifra { min-width: 0; }
+.porcentaje {
+  font-family: Georgia, Cambria, "Times New Roman", serif;
+  font-size: 46px;
+  line-height: 1;
+  color: var(--color-primary);
+  margin: 0 0 2px !important;
+}
+.porcentaje .signo { font-size: 24px; }
+.cifra-nota {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--color-ink-soft);
+  margin-top: 6px !important;
+}
+
+.bloque { margin-bottom: 18px; }
+.bloque p { font-size: 14px; line-height: 1.6; }
+.bloque.destacado {
+  background: var(--color-field-bg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.frecuencia {
+  font-size: 12.5px !important;
+  color: var(--color-ink-soft);
+  margin-top: 6px !important;
+}
+
+.componentes { list-style: none; margin: 0; padding: 0; }
+.componentes li {
+  display: grid;
+  grid-template-columns: 1fr 84px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 12.5px;
+}
+.c-barra {
+  height: 7px;
+  border-radius: 4px;
+  background: #EDF1E9;
+  overflow: hidden;
+}
+.c-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-accent);
+}
+.componentes li.vacio { color: var(--color-ink-soft); }
+
+.cierre {
+  font-size: 14px !important;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--color-navy);
+  margin: 18px 0 !important;
+}
+
+#cerrar-modal { margin-top: 18px; }
+
+/* Los niveles cualitativos traen palabras largas ("descubrimiento") que en
+   pantallas angostas se salen de la tarjeta. */
+@media (max-width: 400px) {
+  #modal { padding: 22px 18px 18px; }
+  .gauge { width: 102px; }
+  .porcentaje { font-size: 40px; }
+  #modal h2 { font-size: 18.5px; }
+  .componentes li { grid-template-columns: 1fr 68px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-fill { transition: none; }
+  .pulso .gauge-base { animation: none; opacity: 0.6; }
+}

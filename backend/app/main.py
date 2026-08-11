@@ -1,11 +1,14 @@
 import asyncio
 import hashlib
 import hmac
+import json
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from . import db
@@ -134,6 +137,76 @@ async def recibir(payload: RespuestaIn):
     log.info("respuesta encolada id=%s area=%s perfil=%s",
              respuesta_id, payload.area, perfil)
     return {"ok": True, "duplicado": False, "id": str(respuesta_id)}
+
+
+@app.get("/v1/respuestas/{respuesta_id}/diagnostico")
+async def obtener_diagnostico(respuesta_id: str):
+    """Devuelve el diagnóstico para mostrarlo en pantalla a quien respondió.
+
+    El id es un UUID que solo recibe quien envió el formulario, así que funciona
+    como llave: sin él no se puede consultar nada. No expone nombre ni cédula,
+    que viven cifrados en otra tabla.
+
+    202 = todavía procesando (el frontend reintenta). 200 = listo.
+    """
+    try:
+        uuid.UUID(respuesta_id)
+    except ValueError:
+        raise HTTPException(status_code=404)
+
+    p = await db.pool()
+    fila = await p.fetchrow(
+        """
+        select r.estado::text as estado,
+               d.porcentaje_global,
+               d.nivel,
+               d.payload
+          from respuestas r
+          left join diagnosticos d on d.respuesta_id = r.id
+         where r.id = $1::uuid
+        """,
+        respuesta_id,
+    )
+
+    if fila is None:
+        raise HTTPException(status_code=404)
+
+    if fila["payload"] is None:
+        if fila["estado"] == "fallido":
+            raise HTTPException(
+                status_code=503,
+                detail="No pudimos generar tu diagnóstico. Ya quedó registrado "
+                       "y lo revisaremos.",
+            )
+        return JSONResponse(status_code=202, content={"listo": False})
+
+    payload = json.loads(fila["payload"])
+    banderas = payload.get("banderas", {})
+
+    # Alguien puede haber usado el formulario para reportar una situación grave.
+    # A esa persona no se le responde con un porcentaje.
+    if banderas.get("requiere_revision_humana"):
+        return {
+            "listo": True,
+            "revision": True,
+            "mensaje": "Gracias por escribirnos. Tu mensaje será revisado por "
+                       "una persona del equipo.",
+        }
+
+    return {
+        "listo": True,
+        "revision": False,
+        "insuficiente": bool(banderas.get("respuesta_insuficiente")),
+        "porcentaje": fila["porcentaje_global"],
+        "nivel": fila["nivel"],
+        "fortaleza": payload.get("fortaleza", {}).get("texto", ""),
+        "proximo_paso": payload.get("proximo_paso", {}),
+        "mensaje_cierre": payload.get("mensaje_cierre", ""),
+        "componentes": [
+            {"id": c.get("id"), "nombre": c.get("nombre"), "nivel": c.get("nivel")}
+            for c in payload.get("componentes", [])
+        ],
+    }
 
 
 @app.get("/v1/estado")

@@ -108,6 +108,64 @@
 
 </div>
 
+<dialog id="modal" aria-labelledby="modal-titulo">
+
+  <div class="modal-cargando" id="pane-cargando">
+    <div class="pulso" aria-hidden="true">
+      <span class="gauge-base"></span>
+    </div>
+    <h2 id="modal-titulo-cargando">Estamos leyendo tu respuesta</h2>
+    <p>Esto toma unos segundos. No cierres esta ventana.</p>
+    <p class="status" id="estado-espera" role="status" aria-live="polite"></p>
+  </div>
+
+  <div class="modal-resultado" id="pane-resultado" hidden>
+    <p class="eyebrow">Tu ADN Susana</p>
+
+    <div class="medidor">
+      <div class="gauge" aria-hidden="true">
+        <span class="gauge-base"></span>
+        <span class="gauge-fill" id="gauge-fill"></span>
+      </div>
+      <div class="cifra">
+        <p class="porcentaje"><span id="pct">0</span><span class="signo">%</span></p>
+        <h2 id="modal-titulo">—</h2>
+        <p class="cifra-nota">de alineación con la cultura institucional</p>
+      </div>
+    </div>
+
+    <section class="bloque">
+      <h3>Lo que ya haces bien</h3>
+      <p id="txt-fortaleza"></p>
+    </section>
+
+    <section class="bloque destacado">
+      <h3>Tu próximo paso Talento Susana</h3>
+      <p id="txt-paso"></p>
+      <p class="frecuencia" id="txt-frecuencia"></p>
+    </section>
+
+    <section class="bloque">
+      <h3>Cómo se ve tu huella</h3>
+      <ul class="componentes" id="lista-componentes"></ul>
+    </section>
+
+    <p class="cierre" id="txt-cierre"></p>
+
+    <div class="confidential">
+      <div class="dot" aria-hidden="true"></div>
+      <p>Este resultado es solo tuyo. Nadie más lo ve: los líderes de área únicamente reciben promedios por equipo.</p>
+    </div>
+  </div>
+
+  <div class="modal-error" id="pane-error" hidden>
+    <h2>No pudimos generar tu diagnóstico</h2>
+    <p id="txt-error">Tu respuesta quedó guardada. Lo intentaremos de nuevo más tarde.</p>
+  </div>
+
+  <button class="submit" id="cerrar-modal" type="button">Cerrar</button>
+</dialog>
+
 <script src="js/script.js"></script>
 </body>
 </html>
