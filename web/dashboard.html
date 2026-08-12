@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indicadores — Diagnóstico ADN Susana</title>
+<link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
+<link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+<div class="panel">
+
+  <header class="topbar">
+    <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
+    <div class="wordmark">
+      <div class="name">Hospital Susana López de Valencia E.S.E.</div>
+      <div class="sub">Diagnóstico ADN Susana — resultados generales</div>
+    </div>
+    <div class="total" id="total-respuestas">
+      <span class="total-num">—</span>
+      <span class="total-label">respuestas</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="tarjeta" id="seccion-areas">
+      <h2>% de alineación con la cultura institucional, por área</h2>
+      <p class="nota">Promedio de las respuestas de cada área.</p>
+      <div id="grid-areas" class="grid-kpi"></div>
+      <p id="vacio-areas" class="vacio" hidden>Aún no hay suficientes respuestas para mostrar este indicador.</p>
+    </section>
+
+    <section class="tarjeta detalle" id="seccion-detalle" hidden>
+      <div class="detalle-cabecera">
+        <h2>Perfil de <span id="detalle-area">—</span></h2>
+        <button id="cerrar-detalle" type="button" class="cerrar" aria-label="Cerrar detalle">✕</button>
+      </div>
+      <p class="nota">Qué tan presente está cada componente en las respuestas de esta área.</p>
+      <ol class="escala-cascada">
+        <li class="escala-paso" style="--nivel: 0;"><span class="escala-num">0</span><span class="escala-texto">Sin evidencia — no se menciona</span></li>
+        <li class="escala-paso" style="--nivel: 1;"><span class="escala-num">1</span><span class="escala-texto">Mención genérica, sin práctica concreta</span></li>
+        <li class="escala-paso" style="--nivel: 2;"><span class="escala-num">2</span><span class="escala-texto">Práctica concreta, sin conexión con su rol</span></li>
+        <li class="escala-paso" style="--nivel: 3;"><span class="escala-num">3</span><span class="escala-texto">Práctica concreta y propia de su rol</span></li>
+        <li class="escala-paso" style="--nivel: 4;"><span class="escala-num">4</span><span class="escala-texto">Práctica propia del rol, conectada con su efecto en el paciente o la institución</span></li>
+      </ol>
+      <div id="radar-componentes" class="radar-wrap"></div>
+    </section>
+  </main>
+
+</div>
+
+<div id="tooltip" class="tooltip" hidden></div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>

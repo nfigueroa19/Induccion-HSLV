@@ -1,0 +1,255 @@
+:root {
+  --color-bg: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-ink: #16241A;
+  --color-ink-soft: #4B5A45;
+  --color-primary: #327531;
+  --color-accent: #76B82A;
+  --color-navy: #29235C;
+  --color-border: #DCE3D5;
+  --color-field-bg: #F7F8F4;
+
+  /* Umbral del anillo KPI: mismo verde de marca arriba, ámbar de aviso abajo.
+     No es una paleta categórica — un solo semáforo de dos paradas. */
+  --ring-alto: var(--color-primary);
+  --ring-medio: var(--color-accent);
+  --ring-bajo: #C77817;
+  --ring-track: #EEF3E6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--color-field-bg);
+  color: var(--color-ink);
+}
+
+.panel {
+  max-width: 1120px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 26px 36px;
+  border-bottom: 3px solid var(--color-accent);
+  background: var(--color-bg);
+}
+.mark { width: 68px; height: 68px; flex-shrink: 0; }
+.mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.wordmark { line-height: 1.25; flex: 1; }
+.wordmark .name { font-weight: 700; font-size: 19px; color: var(--color-navy); }
+.wordmark .sub { font-size: 14px; color: var(--color-ink-soft); }
+
+.total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+  flex-shrink: 0;
+}
+.total-num {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+.total-label {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+main { padding: 32px 36px 56px; }
+
+.tarjeta {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 28px 32px 26px;
+  margin-bottom: 26px;
+}
+.tarjeta h2 {
+  font-size: 21px;
+  margin: 0 0 6px;
+  color: var(--color-navy);
+}
+.tarjeta .nota {
+  font-size: 14.5px;
+  color: var(--color-ink-soft);
+  margin: 0 0 22px;
+  max-width: 62ch;
+}
+
+.detalle-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.detalle-cabecera h2 { margin-bottom: 0; }
+.cerrar {
+  border: none;
+  background: var(--color-field-bg);
+  color: var(--color-ink-soft);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.cerrar:hover { background: var(--color-border); }
+
+.vacio {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  padding: 18px 0;
+}
+
+/* --- Grilla de tarjetas KPI con anillo circular --- */
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 12px 18px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  /* la posición se anima vía FLIP en JS: transform + transition, no layout */
+  transition: transform 0.5s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.kpi:hover, .kpi:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 18px rgba(50, 117, 49, 0.16);
+  outline: none;
+}
+.kpi .anillo { position: relative; width: 128px; height: 128px; }
+.kpi .anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.kpi .anillo .pista { fill: none; stroke: var(--ring-track); stroke-width: 9; }
+.kpi .anillo .relleno {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+.kpi .anillo .pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.kpi .puesto {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  letter-spacing: 0.02em;
+}
+.kpi .nombre {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--color-ink);
+  text-align: center;
+  line-height: 1.25;
+}
+.kpi .n {
+  font-size: 12.5px;
+  color: var(--color-ink-soft);
+}
+
+/* --- Escala 0-4 en cascada: cada nivel un peldaño más lleno/oscuro. --- */
+.escala-cascada {
+  list-style: none;
+  margin: 0 0 26px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.escala-paso {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: calc(var(--nivel) * 22px);
+  padding: 7px 0;
+}
+.escala-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: color-mix(in srgb, var(--color-primary) calc(20% + var(--nivel) * 20%), var(--ring-track) calc(80% - var(--nivel) * 20%));
+}
+.escala-texto {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+.escala-paso:last-child .escala-texto { font-weight: 600; }
+
+/* --- Radar de componentes: el gráfico con más información de la página,
+   se le da todo el ancho de la tarjeta en vez de dejarlo flotando chico. --- */
+.radar-wrap {
+  display: flex;
+  justify-content: center;
+}
+.radar-wrap svg { width: 100%; max-width: 1000px; height: auto; }
+.radar-eje { stroke: var(--color-border); stroke-width: 1.5; }
+.radar-anillo { fill: none; stroke: var(--color-field-bg); stroke-width: 1.5; }
+.radar-forma { fill: var(--color-accent); fill-opacity: 0.3; stroke: var(--color-primary); stroke-width: 3; }
+.radar-punto { fill: var(--color-primary); stroke: var(--color-bg); stroke-width: 2; }
+.radar-etiqueta { font-size: 17px; fill: var(--color-ink); font-weight: 600; }
+.radar-valor { font-size: 14.5px; fill: var(--color-ink-soft); }
+
+.tooltip {
+  position: fixed;
+  z-index: 20;
+  background: var(--color-navy);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: 8px;
+  pointer-events: none;
+  max-width: 220px;
+  box-shadow: 0 6px 18px rgba(22, 36, 26, 0.25);
+}
+
+@media (max-width: 700px) {
+  main { padding: 20px 18px 44px; }
+  .tarjeta { padding: 20px 18px 18px; }
+  .topbar { padding: 18px 20px; flex-wrap: wrap; }
+  .wordmark .name { font-size: 16px; }
+  .grid-kpi { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .kpi .anillo { width: 96px; height: 96px; }
+  .kpi .anillo .pct { font-size: 21px; }
+  .kpi .nombre { font-size: 13.5px; }
+  .escala-paso { margin-left: calc(var(--nivel) * 12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi, .kpi .anillo .relleno { transition: none; }
+}

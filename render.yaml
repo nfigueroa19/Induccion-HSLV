@@ -48,6 +48,10 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: SAMBANOVA_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
 
 # Cuando haya presupuesto, el paso a producción es añadir aquí:
 #

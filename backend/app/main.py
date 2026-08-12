@@ -209,6 +209,51 @@ async def obtener_diagnostico(respuesta_id: str):
     }
 
 
+@app.get("/v1/dashboard")
+async def dashboard():
+    """Indicadores agregados para el panel de comunicaciones/líderes.
+
+    Sin token: lo que expone ya es agregado y anónimo (v_agregado_area y
+    v_componentes_area excluyen grupos de menos de 5 personas desde la vista
+    misma — ver 001_schema.sql). Nunca hay texto ni identidad de nadie aquí.
+    Asistencial y administrativo van fusionados: el dashboard ya no distingue
+    perfil, solo área.
+    """
+    p = await db.pool()
+    areas = await p.fetch(
+        """
+        select area, n, promedio, minimo, maximo
+          from v_agregado_area
+         where campana = $1
+         order by promedio desc
+        """,
+        cfg.campana,
+    )
+    componentes = await p.fetch(
+        """
+        select area, componente_id, componente, n, nivel_promedio
+          from v_componentes_area
+         where campana = $1
+         order by area, componente_id
+        """,
+        cfg.campana,
+    )
+    total = await p.fetchval(
+        """
+        select count(*)
+          from diagnosticos d
+          join respuestas r on r.id = d.respuesta_id
+         where r.campana = $1
+        """,
+        cfg.campana,
+    )
+    return {
+        "total_respuestas": total,
+        "areas": [dict(f) for f in areas],
+        "componentes": [dict(f) for f in componentes],
+    }
+
+
 @app.get("/v1/estado")
 async def estado(x_admin_token: str = Header(default="")):
     """Monitoreo de la cola el día del evento. Solo conteos, sin datos personales."""

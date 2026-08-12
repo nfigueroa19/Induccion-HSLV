@@ -20,8 +20,12 @@ class Config(BaseSettings):
 
     # --- Worker ------------------------------------------------------------
     worker_embebido: bool = False
-    worker_lote: int = 8
-    worker_concurrencia: int = 4
+    # Antes en 8/4: con NIM tardando 20-55s por llamada, un lote tan chico
+    # marcaba el ritmo de TODO el ciclo al del proveedor más lento, sin
+    # importar cuánta concurrencia hubiera. Subido tras medir con
+    # prueba_carga.py — ver minuta 2026-08-11.
+    worker_lote: int = 30
+    worker_concurrencia: int = 30
     worker_pausa_seg: float = 2.0
 
     # --- Proveedores de LLM (todos opcionales: se usan los que estén) -------
@@ -32,6 +36,8 @@ class Config(BaseSettings):
     cerebras_api_key: str = ""
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
+    sambanova_api_key: str = ""
+    mistral_api_key: str = ""
 
     @property
     def lista_origenes(self) -> list[str]:

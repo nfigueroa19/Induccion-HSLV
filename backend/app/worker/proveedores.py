@@ -35,6 +35,8 @@ GROQ_URL = "https://api.groq.com/openai/v1"
 CEREBRAS_URL = "https://api.cerebras.ai/v1"
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+SAMBANOVA_URL = "https://api.sambanova.ai/v1"
+MISTRAL_URL = "https://api.mistral.ai/v1"
 
 
 def catalogo() -> list[Proveedor]:
@@ -75,10 +77,10 @@ def catalogo() -> list[Proveedor]:
                 prioridad=3,
             ),
             Proveedor(
-                id="nim:nemotron-70b",
+                id="nim:nemotron-super-49b",
                 base_url=NIM_URL,
                 api_key=cfg.nvidia_api_key,
-                modelo="nvidia/llama-3.1-nemotron-70b-instruct",
+                modelo="nvidia/llama-3.3-nemotron-super-49b-v1",
                 rpm=18,
                 prioridad=3,
             ),
@@ -104,12 +106,32 @@ def catalogo() -> list[Proveedor]:
             prioridad=3,
         ))
 
+    if cfg.sambanova_api_key:
+        rutas.append(Proveedor(
+            id="sambanova:llama-3.3-70b",
+            base_url=SAMBANOVA_URL,
+            api_key=cfg.sambanova_api_key,
+            modelo="Meta-Llama-3.3-70B-Instruct",
+            rpm=100,               # real: 600 rpm en el tier gratuito; conservador
+            prioridad=3,
+        ))
+
+    if cfg.mistral_api_key:
+        rutas.append(Proveedor(
+            id="mistral:small",
+            base_url=MISTRAL_URL,
+            api_key=cfg.mistral_api_key,
+            modelo="mistral-small-latest",
+            rpm=50,                # real: ~1 req/s; conservador
+            prioridad=3,
+        ))
+
     if cfg.gemini_api_key:
         rutas.append(Proveedor(
             id="gemini:flash",
             base_url=GEMINI_URL,
             api_key=cfg.gemini_api_key,
-            modelo="gemini-2.0-flash",
+            modelo="gemini-flash-lite-latest",
             rpm=12,
             prioridad=4,
         ))

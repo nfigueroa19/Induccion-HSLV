@@ -99,10 +99,14 @@ alter table eventos_worker enable row level security;
 -- Reporte agregado por área, con k-anonimato.
 -- Los grupos de menos de 5 personas no aparecen: en un área de 2, el "promedio"
 -- es el diagnóstico individual disfrazado.
+-- Fusiona asistencial + administrativo: el dashboard ya no distingue perfil,
+-- solo el área (ver Segundo Cerebro/06 - Frontend/Identidad visual y diseno.md).
+-- drop + create porque Postgres no permite quitar columnas (perfil) de una
+-- vista existente con create or replace (error 42P16).
 -- ---------------------------------------------------------------------------
-create or replace view v_agregado_area as
+drop view if exists v_agregado_area;
+create view v_agregado_area as
 select r.area,
-       r.perfil,
        r.campana,
        count(*)                        as n,
        round(avg(d.porcentaje_global)) as promedio,
@@ -110,14 +114,14 @@ select r.area,
        max(d.porcentaje_global)        as maximo
 from diagnosticos d
 join respuestas r on r.id = d.respuesta_id
-group by r.area, r.perfil, r.campana
+group by r.area, r.campana
 having count(*) >= 5;
 
 -- Fortalezas y debilidades por área, para los líderes.
 -- Desarma el JSON de componentes y promedia el nivel de cada uno.
-create or replace view v_componentes_area as
+drop view if exists v_componentes_area;
+create view v_componentes_area as
 select r.area,
-       r.perfil,
        r.campana,
        c ->> 'id'                            as componente_id,
        c ->> 'nombre'                        as componente,
@@ -126,5 +130,5 @@ select r.area,
 from diagnosticos d
 join respuestas r on r.id = d.respuesta_id
 cross join lateral jsonb_array_elements(d.payload -> 'componentes') as c
-group by r.area, r.perfil, r.campana, c ->> 'id', c ->> 'nombre'
+group by r.area, r.campana, c ->> 'id', c ->> 'nombre'
 having count(*) >= 5;

@@ -1,0 +1,4 @@
+# Rewrites para Render Static Site (mismo formato que Netlify).
+# 200 = rewrite: sirve el archivo destino manteniendo la URL visible limpia,
+# no es un redirect visible para quien navega.
+/dashboard   /dashboard.html   200
