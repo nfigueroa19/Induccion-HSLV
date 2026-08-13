@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingreso — Panel de jefes de servicio</title>
+<link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
+<link rel="stylesheet" href="css/panel.css" />
+</head>
+<body class="pagina-login">
+
+<main class="tarjeta-login">
+  <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
+  <h1>Panel de jefes de servicio</h1>
+  <p class="nota">Asistencia y resultados del diagnóstico ADN Susana.</p>
+
+  <form id="form-login" novalidate>
+    <label for="usuario">Usuario</label>
+    <input id="usuario" name="usuario" type="text" autocomplete="username" required autofocus />
+
+    <label for="contrasena">Contraseña</label>
+    <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required />
+
+    <p id="error-login" class="error" hidden></p>
+
+    <button type="submit">Ingresar</button>
+  </form>
+</main>
+
+<script src="js/login.js"></script>
+</body>
+</html>

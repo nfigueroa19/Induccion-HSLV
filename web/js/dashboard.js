@@ -17,7 +17,9 @@ const radarComponentes = document.getElementById('radar-componentes');
 const detalleArea = document.getElementById('detalle-area');
 const cerrarDetalle = document.getElementById('cerrar-detalle');
 const tooltip = document.getElementById('tooltip');
-const totalNum = document.querySelector('#total-respuestas .total-num');
+const resumenRespuestas = document.getElementById('resumen-respuestas');
+const resumenPromedio = document.getElementById('resumen-promedio');
+const resumenAreas = document.getElementById('resumen-areas');
 
 let datos = { total_respuestas: 0, areas: [], componentes: [] };
 let areaSeleccionada = null;
@@ -51,33 +53,34 @@ function colorPorPct(pct) {
 }
 
 function tarjetaKpi(area, puesto) {
-  const r = 40;
-  const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, area.promedio));
-  const offset = c - (pct / 100) * c;
 
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'kpi';
+  btn.className = 'barra-area';
   btn.dataset.area = area.area;
   btn.setAttribute('aria-pressed', String(area.area === areaSeleccionada));
 
   btn.innerHTML = `
-    <span class="puesto">#${puesto}</span>
-    <span class="anillo">
-      <svg viewBox="0 0 100 100">
-        <circle class="pista" cx="50" cy="50" r="${r}" />
-        <circle class="relleno" cx="50" cy="50" r="${r}"
-          stroke="${colorPorPct(pct)}"
-          stroke-dasharray="${c}" stroke-dashoffset="${offset}" />
-      </svg>
-      <span class="pct">${pct}%</span>
+    <span class="barra-puesto">#${puesto}</span>
+    <span class="barra-cuerpo">
+      <span class="barra-cabecera">
+        <span class="barra-nombre">${area.area}</span>
+        <span class="barra-cifras">
+          <span class="barra-pct">${pct}%</span>
+          <span class="barra-n">${area.n} respuestas</span>
+        </span>
+      </span>
+      <span class="barra-pista">
+        <span class="barra-relleno" style="width: ${pct}%; background: ${colorPorPct(pct)};"></span>
+      </span>
     </span>
-    <span class="nombre">${area.area}</span>
-    <span class="n">${area.n} respuestas</span>
   `;
 
-  btn.addEventListener('click', () => mostrarDetalle(area.area));
+  btn.addEventListener('click', () => {
+    ocultarTooltip();
+    mostrarDetalle(area.area);
+  });
   btn.addEventListener('mouseenter', (e) =>
     mostrarTooltip(e, `${area.area} · ${area.n} respuestas · rango ${area.minimo}%–${area.maximo}%`));
   btn.addEventListener('mousemove', moverTooltip);
@@ -96,11 +99,16 @@ function moverTooltip(e) {
   tooltip.style.top = `${e.clientY + 14}px`;
 }
 function ocultarTooltip() { tooltip.hidden = true; }
+window.addEventListener('scroll', ocultarTooltip, { passive: true });
 
 function dibujarAreas() {
-  totalNum.textContent = datos.total_respuestas ?? '—';
-
   const filas = [...datos.areas].sort((a, b) => b.promedio - a.promedio);
+
+  resumenRespuestas.textContent = datos.total_respuestas ?? '—';
+  resumenAreas.textContent = filas.length || '—';
+  const sumaPonderada = filas.reduce((acc, a) => acc + a.promedio * a.n, 0);
+  const totalN = filas.reduce((acc, a) => acc + a.n, 0);
+  resumenPromedio.textContent = totalN > 0 ? `${Math.round(sumaPonderada / totalN)}%` : '—';
 
   if (filas.length === 0) {
     gridAreas.innerHTML = '';
@@ -112,14 +120,14 @@ function dibujarAreas() {
   // FLIP: se capturan las posiciones actuales antes de reordenar el DOM,
   // para animar el movimiento en vez de que las tarjetas salten de golpe.
   const previas = new Map();
-  gridAreas.querySelectorAll('.kpi').forEach((el) => {
+  gridAreas.querySelectorAll('.barra-area').forEach((el) => {
     previas.set(el.dataset.area, el.getBoundingClientRect());
   });
 
   gridAreas.innerHTML = '';
   filas.forEach((a, i) => gridAreas.appendChild(tarjetaKpi(a, i + 1)));
 
-  gridAreas.querySelectorAll('.kpi').forEach((el) => {
+  gridAreas.querySelectorAll('.barra-area').forEach((el) => {
     const antes = previas.get(el.dataset.area);
     if (!antes) return;
     const despues = el.getBoundingClientRect();
@@ -139,7 +147,7 @@ function mostrarDetalle(area) {
   areaSeleccionada = area;
   detalleArea.textContent = area;
   seccionDetalle.hidden = false;
-  gridAreas.querySelectorAll('.kpi').forEach((el) => {
+  gridAreas.querySelectorAll('.barra-area').forEach((el) => {
     el.setAttribute('aria-pressed', String(el.dataset.area === area));
   });
   seccionDetalle.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

@@ -47,24 +47,6 @@ body {
 .wordmark .name { font-weight: 700; font-size: 19px; color: var(--color-navy); }
 .wordmark .sub { font-size: 14px; color: var(--color-ink-soft); }
 
-.total {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.15;
-  flex-shrink: 0;
-}
-.total-num {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-primary);
-  font-variant-numeric: tabular-nums;
-}
-.total-label {
-  font-size: 13px;
-  color: var(--color-ink-soft);
-}
-
 main { padding: 32px 36px 56px; }
 
 .tarjeta {
@@ -111,67 +93,124 @@ main { padding: 32px 36px 56px; }
   padding: 18px 0;
 }
 
-/* --- Grilla de tarjetas KPI con anillo circular --- */
-.grid-kpi {
+/* --- Recuadro resumen: cifras generales antes del detalle por área --- */
+.resumen-general {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 24px;
 }
-.kpi {
+.resumen-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 4px;
+  padding: 18px 12px;
+  background: var(--color-field-bg);
+  text-align: center;
+}
+.resumen-valor {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+.resumen-etiqueta {
+  font-size: 12.5px;
+  color: var(--color-ink-soft);
+}
+
+/* --- Lista de barras horizontales, una por área --- */
+.lista-barras {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  padding: 22px 12px 18px;
+}
+.barra-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 16px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
-  /* la posición se anima vía FLIP en JS: transform + transition, no layout */
-  transition: transform 0.5s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-align: left;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.5s ease;
 }
-.kpi:hover, .kpi:focus-visible {
+.barra-area:hover, .barra-area:focus-visible {
   border-color: var(--color-primary);
   box-shadow: 0 6px 18px rgba(50, 117, 49, 0.16);
   outline: none;
 }
-.kpi .anillo { position: relative; width: 128px; height: 128px; }
-.kpi .anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.kpi .anillo .pista { fill: none; stroke: var(--ring-track); stroke-width: 9; }
-.kpi .anillo .relleno {
-  fill: none;
-  stroke-width: 9;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s ease;
+.barra-area[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg));
 }
-.kpi .anillo .pct {
-  position: absolute;
-  inset: 0;
+.barra-puesto {
+  flex-shrink: 0;
+  width: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.barra-cuerpo {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
+  flex-direction: column;
+  gap: 6px;
+}
+.barra-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.barra-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.barra-cifras {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.barra-pct {
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
 }
-.kpi .puesto {
+.barra-n {
   font-size: 12px;
-  font-weight: 700;
   color: var(--color-ink-soft);
-  letter-spacing: 0.02em;
 }
-.kpi .nombre {
-  font-size: 15.5px;
-  font-weight: 600;
-  color: var(--color-ink);
-  text-align: center;
-  line-height: 1.25;
+.barra-pista {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ring-track);
+  overflow: hidden;
 }
-.kpi .n {
-  font-size: 12.5px;
-  color: var(--color-ink-soft);
+.barra-relleno {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: 6px;
+  transition: width 0.6s ease;
 }
 
 /* --- Escala 0-4 en cascada: cada nivel un peldaño más lleno/oscuro. --- */
@@ -243,13 +282,13 @@ main { padding: 32px 36px 56px; }
   .tarjeta { padding: 20px 18px 18px; }
   .topbar { padding: 18px 20px; flex-wrap: wrap; }
   .wordmark .name { font-size: 16px; }
-  .grid-kpi { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-  .kpi .anillo { width: 96px; height: 96px; }
-  .kpi .anillo .pct { font-size: 21px; }
-  .kpi .nombre { font-size: 13.5px; }
+  .resumen-general { grid-template-columns: 1fr; }
+  .barra-area { padding: 10px 12px; gap: 10px; }
+  .barra-nombre { font-size: 13.5px; }
+  .barra-pct { font-size: 14px; }
   .escala-paso { margin-left: calc(var(--nivel) * 12px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kpi, .kpi .anillo .relleno { transition: none; }
+  .barra-area, .barra-relleno { transition: none; }
 }

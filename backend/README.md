@@ -16,7 +16,8 @@ backend/
 ├── .env.example           Plantilla de variables — copiar a .env en local
 ├── sql/
 │   ├── 001_schema.sql     Tablas, RLS, vista agregada        [paso 1.3.2]
-│   └── 002_claim.sql      Cola con FOR UPDATE SKIP LOCKED    [paso 1.3.2]
+│   ├── 002_claim.sql      Cola con FOR UPDATE SKIP LOCKED    [paso 1.3.2]
+│   └── 003_admins.sql     Usuarios del panel de jefes         [paso 4]
 ├── prompts/
 │   ├── componentes_cultura.v1.md   ← pegar aquí el documento institucional
 │   └── rubrica.v1.md

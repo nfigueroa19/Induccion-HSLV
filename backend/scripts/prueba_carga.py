@@ -41,40 +41,130 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import db  # noqa: E402
 from app.config import cfg  # noqa: E402
 
-AREAS = [
-    "Urgencias", "Hospitalización", "Enfermería", "UCI Materna", "Cirugía",
+from app.main import AREAS_ASISTENCIALES  # noqa: E402
+
+AREAS_ADMINISTRATIVAS = [
     "Sistemas de Información", "Talento Humano", "Facturación",
-    "Gestión Documental", "Consulta Externa",
+    "Gestión Documental", "Calidad", "Compras", "Mercadeo",
+    "Servicios Generales", "Mantenimiento", "Subdirección Científica",
+]
+AREAS = sorted(AREAS_ASISTENCIALES) + AREAS_ADMINISTRATIVAS
+
+# Textos reales (>=120 caracteres) separados por perfil y por tono, para que
+# la mezcla se parezca al evento de verdad: no todos van a escribir algo
+# impecable y positivo. "Insuficiente" no aplica aquí porque la API exige
+# 120 caracteres mínimo (eso se prueba aparte, a mano).
+TEXTOS_ASISTENCIAL_POSITIVO = [
+    "Trabajo directamente con los pacientes y sus familias, acompañando "
+    "momentos difíciles con respeto y calidez. Creo que la humanización del "
+    "servicio es lo que más nos diferencia como institución frente a otras.",
+
+    "Participo en la formación de nuevo personal, transmitiendo no solo "
+    "procedimientos técnicos sino también la forma en que aquí se entiende "
+    "el cuidado del paciente. Eso incluye escuchar antes de actuar.",
+
+    "En la UCI cada turno exige coordinación exacta con el equipo. Me esfuerzo "
+    "por comunicar cambios de estado a tiempo y por explicarle a la familia "
+    "lo que está pasando, aunque el pronóstico no siempre sea bueno.",
+
+    "Acompaño el proceso de rehabilitación de cada paciente celebrando los "
+    "avances pequeños, porque para ellos representan mucho. Trato de que "
+    "sientan que su recuperación importa tanto como su diagnóstico.",
+
+    "En pediatría trato de que el niño no sienta miedo del procedimiento, "
+    "explicando con paciencia y jugando un poco antes de empezar. Los padres "
+    "también necesitan esa misma tranquilidad para confiar en nosotros.",
 ]
 
-# Varios textos de largo real (>=120 caracteres) para que el prompt no sea
-# idéntico en cada request y se parezca más al tráfico real del evento.
-TEXTOS = [
+TEXTOS_ASISTENCIAL_NEUTRAL = [
+    "Cumplo los protocolos de bioseguridad y de registro clínico como están "
+    "establecidos. Reporto novedades por los canales indicados y asisto a las "
+    "capacitaciones cuando el turno lo permite.",
+
+    "Mi función es sobre todo técnica: tomar y procesar muestras dentro de "
+    "los tiempos definidos. Aplico la cultura institucional principalmente "
+    "en la puntualidad y el manejo cuidadoso de cada resultado.",
+
+    "Sigo el protocolo de admisión y valoración inicial tal como se enseñó en "
+    "la inducción. No tengo mucho contacto directo con el paciente fuera de "
+    "ese primer momento, pero procuro que sea ordenado y claro.",
+]
+
+TEXTOS_ASISTENCIAL_CRITICO = [
+    "Sinceramente, con la carga de pacientes que manejamos por turno es "
+    "difícil aplicar todo lo que dice el manual de cultura. Uno hace lo que "
+    "puede, pero el cansancio termina pesando más que la mejor intención.",
+
+    "Siento que estos discursos de cultura institucional se quedan en el "
+    "papel. En el día a día lo que más se nota es la falta de personal, no "
+    "los valores que se repiten en las carteleras.",
+
+    "Intento seguir los protocolos, pero muchas veces faltan insumos básicos "
+    "y toca improvisar. Eso genera estrés en el equipo y a veces afecta cómo "
+    "tratamos a los pacientes, aunque no sea la intención de nadie.",
+]
+
+TEXTOS_ADMINISTRATIVO_POSITIVO = [
     "Me encargo del análisis de bases de datos y del desarrollo de las "
     "actividades que respaldan la toma de decisiones y el cumplimiento de los "
     "objetivos institucionales. Procuro que los equipos cuenten con "
     "información confiable para la atención segura de los usuarios.",
 
-    "Trabajo directamente con los pacientes y sus familias, acompañando "
-    "momentos difíciles con respeto y calidez. Creo que la humanización del "
-    "servicio es lo que más nos diferencia como institución frente a otras.",
-
     "Coordino la logística de insumos y equipos del área, asegurando que "
     "nada falte en el momento en que se necesita. Me gusta pensar que mi "
     "trabajo silencioso sostiene el trabajo visible de mis compañeros.",
-
-    "Superviso los procesos administrativos y la documentación del área, "
-    "buscando que los tiempos de respuesta sean cortos y confiables. La "
-    "mejora continua es algo que intento aplicar todos los días.",
 
     "Recibo y oriento a los usuarios que llegan a la institución, muchas "
     "veces en momentos de angustia. Trato de que la primera impresión sea de "
     "calidez y organización, porque eso genera confianza desde el inicio.",
 
-    "Participo en la formación de nuevo personal, transmitiendo no solo "
-    "procedimientos técnicos sino también la forma en que aquí se entiende "
-    "el cuidado del paciente. Eso incluye escuchar antes de actuar.",
+    "Gestiono la facturación buscando que cada trámite sea claro para el "
+    "paciente, sobre todo cuando ya está preocupado por su salud. Un proceso "
+    "administrativo bien explicado también es una forma de cuidar a alguien.",
 ]
+
+TEXTOS_ADMINISTRATIVO_NEUTRAL = [
+    "Superviso los procesos administrativos y la documentación del área, "
+    "buscando que los tiempos de respuesta sean cortos y confiables. La "
+    "mejora continua es algo que intento aplicar todos los días.",
+
+    "Mi trabajo consiste en mantener actualizados los sistemas de "
+    "información del área. Aplico la cultura institucional cumpliendo los "
+    "plazos acordados y documentando los cambios que hago.",
+
+    "Realizo compras y seguimiento a proveedores según el cronograma "
+    "establecido. No tengo contacto directo con pacientes, pero procuro que "
+    "mis tiempos no retrasen a quienes sí lo tienen.",
+]
+
+TEXTOS_ADMINISTRATIVO_CRITICO = [
+    "Entre la cantidad de reportes que hay que entregar y el poco personal "
+    "del área, es difícil dedicarle tiempo a pensar en 'cultura'. La verdad "
+    "es que la prioridad diaria es simplemente no atrasarse.",
+
+    "Creo que estas iniciativas de cultura institucional casi nunca llegan a "
+    "las áreas administrativas con la misma fuerza que a las asistenciales. "
+    "A veces uno se siente como el área invisible del hospital.",
+
+    "Hay procesos que dependen de sistemas viejos y lentos, y eso genera "
+    "reprocesos constantes. Se pierde tiempo que podría usarse en mejorar la "
+    "atención al usuario interno y externo.",
+]
+
+# Peso relativo por tono: la mayoría comprometida, una porción neutra/técnica,
+# y una minoría crítica — así se parece más a una jornada real que a una
+# vitrina de respuestas perfectas.
+TONOS = ["positivo", "neutral", "critico"]
+PESOS_TONO = [0.55, 0.25, 0.20]
+
+BANCOS = {
+    ("asistencial", "positivo"): TEXTOS_ASISTENCIAL_POSITIVO,
+    ("asistencial", "neutral"): TEXTOS_ASISTENCIAL_NEUTRAL,
+    ("asistencial", "critico"): TEXTOS_ASISTENCIAL_CRITICO,
+    ("administrativo", "positivo"): TEXTOS_ADMINISTRATIVO_POSITIVO,
+    ("administrativo", "neutral"): TEXTOS_ADMINISTRATIVO_NEUTRAL,
+    ("administrativo", "critico"): TEXTOS_ADMINISTRATIVO_CRITICO,
+}
 
 # Semilla por corrida: evita que dos ejecuciones seguidas generen las mismas
 # cédulas y choquen con la restricción única (campana, cedula_hash) — eso
@@ -83,11 +173,15 @@ SEMILLA_CORRIDA = str(int(time.time()) % 100000).zfill(5)
 
 
 def generar_payload(i: int) -> dict:
+    area = random.choice(AREAS)
+    perfil = "asistencial" if area in AREAS_ASISTENCIALES else "administrativo"
+    tono = random.choices(TONOS, weights=PESOS_TONO, k=1)[0]
+    texto = random.choice(BANCOS[(perfil, tono)])
     return {
         "nombre": f"PRUEBA CARGA {SEMILLA_CORRIDA}-{i:05d}",
         "cedula": f"9{SEMILLA_CORRIDA}{i:04d}",
-        "area": random.choice(AREAS),
-        "texto": random.choice(TEXTOS),
+        "area": area,
+        "texto": texto,
     }
 
 

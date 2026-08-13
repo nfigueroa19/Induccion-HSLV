@@ -65,7 +65,10 @@ def catalogo() -> list[Proveedor]:
             ),
         ]
 
-    # Prioridad 3: rutas directas. Sobreviven a que OmniRoute esté caído.
+    # Prioridad 4: rutas directas de NIM. Bajadas desde 3 el 2026-08-13 tras
+    # medir con prueba_carga.py: 55-77s de latencia promedio, muy por encima
+    # del resto — arrastraban el drenaje de la cola. Sobreviven a que
+    # OmniRoute esté caído, pero ahora se usan solo si las rápidas fallan.
     if cfg.nvidia_api_key:
         rutas += [
             Proveedor(
@@ -74,7 +77,7 @@ def catalogo() -> list[Proveedor]:
                 api_key=cfg.nvidia_api_key,
                 modelo="meta/llama-3.3-70b-instruct",
                 rpm=18,                    # dos rutas NIM comparten el límite de ~40
-                prioridad=3,
+                prioridad=4,
             ),
             Proveedor(
                 id="nim:nemotron-super-49b",
@@ -82,7 +85,7 @@ def catalogo() -> list[Proveedor]:
                 api_key=cfg.nvidia_api_key,
                 modelo="nvidia/llama-3.3-nemotron-super-49b-v1",
                 rpm=18,
-                prioridad=3,
+                prioridad=4,
             ),
         ]
 
@@ -133,7 +136,7 @@ def catalogo() -> list[Proveedor]:
             api_key=cfg.gemini_api_key,
             modelo="gemini-flash-lite-latest",
             rpm=12,
-            prioridad=4,
+            prioridad=3,        # subida desde 4 el 2026-08-13, junto con bajar NIM
         ))
 
     # Prioridad 5: último recurso. Modelos ":free" de OpenRouter, más lentos

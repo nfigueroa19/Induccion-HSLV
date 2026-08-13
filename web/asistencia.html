@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel de jefes de servicio — ADN Susana</title>
+<link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
+<link rel="stylesheet" href="css/panel.css" />
+</head>
+<body>
+<div class="panel">
+
+  <header class="topbar">
+    <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
+    <div class="wordmark">
+      <div class="name">Hospital Susana López de Valencia E.S.E.</div>
+      <div class="sub">Panel de jefes de servicio — asistencia y diagnóstico ADN Susana</div>
+    </div>
+    <button id="cerrar-sesion" type="button" class="btn-peligro">Cerrar sesión</button>
+  </header>
+
+  <main>
+    <section class="tarjeta">
+      <div class="resumen-general" id="resumen-general">
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-total">—</span>
+          <span class="resumen-etiqueta">personas registradas</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-listos">—</span>
+          <span class="resumen-etiqueta">diagnósticos listos</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-promedio">—</span>
+          <span class="resumen-etiqueta">promedio general</span>
+        </div>
+      </div>
+
+      <div class="filtros">
+        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre o cédula…" />
+        <select id="filtro-area"><option value="">Todas las áreas</option></select>
+        <select id="filtro-estado">
+          <option value="">Todos los estados</option>
+          <option value="listo">Listo</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="procesando">Procesando</option>
+          <option value="fallido">Fallido</option>
+        </select>
+      </div>
+
+      <div class="tabla-wrap">
+        <table id="tabla-respuestas">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Cédula</th>
+              <th>Área</th>
+              <th>Estado</th>
+              <th>% global</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-tabla"></tbody>
+        </table>
+        <p id="vacio-tabla" class="vacio" hidden>No hay resultados con estos filtros.</p>
+        <p id="cargando-tabla" class="vacio">Cargando…</p>
+      </div>
+    </section>
+  </main>
+
+</div>
+
+<script src="js/asistencia.js"></script>
+</body>
+</html>

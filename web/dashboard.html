@@ -16,17 +16,29 @@
       <div class="name">Hospital Susana López de Valencia E.S.E.</div>
       <div class="sub">Diagnóstico ADN Susana — resultados generales</div>
     </div>
-    <div class="total" id="total-respuestas">
-      <span class="total-num">—</span>
-      <span class="total-label">respuestas</span>
-    </div>
   </header>
 
   <main>
     <section class="tarjeta" id="seccion-areas">
       <h2>% de alineación con la cultura institucional, por área</h2>
       <p class="nota">Promedio de las respuestas de cada área.</p>
-      <div id="grid-areas" class="grid-kpi"></div>
+
+      <div class="resumen-general" id="resumen-general">
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-respuestas">—</span>
+          <span class="resumen-etiqueta">respuestas totales</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-promedio">—</span>
+          <span class="resumen-etiqueta">promedio general</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-areas">—</span>
+          <span class="resumen-etiqueta">áreas que respondieron</span>
+        </div>
+      </div>
+
+      <div id="grid-areas" class="lista-barras"></div>
       <p id="vacio-areas" class="vacio" hidden>Aún no hay suficientes respuestas para mostrar este indicador.</p>
     </section>
 

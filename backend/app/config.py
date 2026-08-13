@@ -18,6 +18,10 @@ class Config(BaseSettings):
     origenes: str = "http://localhost:8899"
     admin_token: str = ""     # protege /v1/estado; vacío = endpoint deshabilitado
 
+    # --- Panel de administración (jefes de servicio) ------------------------
+    jwt_secret: str = ""      # firma los tokens de sesión del login; vacío = endpoints deshabilitados
+    admin_sesion_min: int = 15  # vida del token; el frontend además cierra sesión por inactividad
+
     # --- Worker ------------------------------------------------------------
     worker_embebido: bool = False
     # Antes en 8/4: con NIM tardando 20-55s por llamada, un lote tan chico

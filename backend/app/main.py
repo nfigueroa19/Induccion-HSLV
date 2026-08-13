@@ -5,8 +5,11 @@ import json
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+import bcrypt
+import jwt
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -59,7 +62,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cfg.lista_origenes,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-Admin-Token"],
+    allow_headers=["Content-Type", "X-Admin-Token", "Authorization"],
+    expose_headers=["X-Session-Token"],
 )
 
 
@@ -263,3 +267,113 @@ async def estado(x_admin_token: str = Header(default="")):
     p = await db.pool()
     filas = await p.fetch("select * from estado_cola($1)", cfg.campana)
     return {"campana": cfg.campana, "cola": {f["estado"]: f["n"] for f in filas}}
+
+
+# ---------------------------------------------------------------------------
+# Panel de administración (jefes de servicio): login propio + tabla con
+# nombre, cédula y diagnóstico por persona. A diferencia de /v1/dashboard,
+# esto SÍ expone identidad — por eso vive detrás de sesión, no solo del
+# secreto de la URL. Ver Confidencialidad y privacidad.
+# ---------------------------------------------------------------------------
+
+class LoginIn(BaseModel):
+    usuario: str = Field(min_length=1, max_length=60)
+    contrasena: str = Field(min_length=1, max_length=200)
+
+
+def _firmar_token(usuario: str) -> str:
+    vencimiento = datetime.now(timezone.utc) + timedelta(minutes=cfg.admin_sesion_min)
+    return jwt.encode(
+        {"sub": usuario, "exp": vencimiento}, cfg.jwt_secret, algorithm="HS256"
+    )
+
+
+async def admin_actual(authorization: str = Header(default="")) -> str:
+    """Valida el Bearer token y devuelve el usuario. Renueva el token en cada
+    llamada (sesión deslizante): 15 min de inactividad real cierran la
+    sesión, no 15 min desde el login."""
+    if not cfg.jwt_secret:
+        raise HTTPException(status_code=404)
+
+    esquema, _, token = authorization.partition(" ")
+    if esquema != "Bearer" or not token:
+        raise HTTPException(status_code=401, detail="Sesión requerida.")
+
+    try:
+        payload = jwt.decode(token, cfg.jwt_secret, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Sesión inválida o vencida.")
+
+    return payload["sub"]
+
+
+@app.post("/v1/admin/login")
+async def admin_login(payload: LoginIn):
+    if not cfg.jwt_secret:
+        raise HTTPException(status_code=404)
+
+    p = await db.pool()
+    fila = await p.fetchrow(
+        "select password_hash from admins where usuario = $1 and activo",
+        payload.usuario,
+    )
+
+    # Mismo mensaje para usuario inexistente o contraseña incorrecta: no dar
+    # pistas de qué usuarios existen.
+    valido = fila is not None and bcrypt.checkpw(
+        payload.contrasena.encode(), fila["password_hash"].encode()
+    )
+    if not valido:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos.")
+
+    log.info("login admin usuario=%s", payload.usuario)
+    return {"token": _firmar_token(payload.usuario)}
+
+
+@app.get("/v1/admin/respuestas")
+async def admin_respuestas(usuario: str = Depends(admin_actual)):
+    """Asistencia y diagnóstico por persona: nombre, cédula, área, estado,
+    % global y % por componente. Sin el texto libre que escribió cada quien
+    — eso sigue siendo confidencial incluso para el panel de jefes."""
+    p = await db.pool()
+    filas = await p.fetch(
+        """
+        select pgp_sym_decrypt(i.nombre_cifrado, $2)  as nombre,
+               pgp_sym_decrypt(i.cedula_cifrada, $2)   as cedula,
+               r.area, r.perfil, r.estado::text as estado,
+               d.porcentaje_global, d.nivel, d.payload,
+               r.creado_en
+          from respuestas r
+          join identidades i on i.id = r.identidad_id
+          left join diagnosticos d on d.respuesta_id = r.id
+         where r.campana = $1
+         order by r.creado_en desc
+        """,
+        cfg.campana, cfg.clave_datos,
+    )
+
+    filas_json = []
+    for f in filas:
+        componentes = []
+        if f["payload"] is not None:
+            payload = json.loads(f["payload"])
+            componentes = [
+                {"id": c.get("id"), "nombre": c.get("nombre"), "nivel": c.get("nivel")}
+                for c in payload.get("componentes", [])
+            ]
+        filas_json.append({
+            "nombre": f["nombre"],
+            "cedula": f["cedula"],
+            "area": f["area"],
+            "perfil": f["perfil"],
+            "estado": f["estado"],
+            "porcentaje": f["porcentaje_global"],
+            "nivel": f["nivel"],
+            "componentes": componentes,
+            "creado_en": f["creado_en"].isoformat(),
+        })
+
+    return JSONResponse(
+        content={"campana": cfg.campana, "respuestas": filas_json},
+        headers={"X-Session-Token": _firmar_token(usuario)},
+    )
