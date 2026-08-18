@@ -12,7 +12,7 @@ Ver el Paso 0 en Segundo Cerebro/01 - Arquitectura/Arquitectura de despliegue
 y pipeline asincrono.md
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..config import cfg
 
@@ -28,6 +28,7 @@ class Proveedor:
     temperatura: float = 0.2
     max_tokens: int = 900
     timeout_s: float = 90.0
+    extra: dict = field(default_factory=dict)  # parámetros extra del body, por proveedor
 
 
 NIM_URL = "https://integrate.api.nvidia.com/v1"
@@ -90,13 +91,21 @@ def catalogo() -> list[Proveedor]:
         ]
 
     if cfg.groq_api_key:
+        # llama-3.3-70b-versatile se retira el 2026-08-16 (aviso de Groq).
+        # Reemplazo recomendado por Groq: qwen/qwen3.6-27b (27B) en vez de
+        # openai/gpt-oss-120b (120B) — más liviano, alcanza para evaluar un
+        # texto corto contra una rúbrica, no hace falta el modelo grande.
+        # reasoning_effort="none": es un modelo de razonamiento — sin esto,
+        # gasta max_tokens "pensando" y corta el JSON a mitad (probado
+        # 2026-08-15: json_validate_failed sin este parámetro).
         rutas.append(Proveedor(
-            id="groq:llama-3.3-70b",
+            id="groq:qwen3.6-27b",
             base_url=GROQ_URL,
             api_key=cfg.groq_api_key,
-            modelo="llama-3.3-70b-versatile",
+            modelo="qwen/qwen3.6-27b",
             rpm=25,
             prioridad=3,
+            extra={"reasoning_effort": "none"},
         ))
 
     if cfg.cerebras_api_key:

@@ -14,26 +14,31 @@ Piso 55 y techo 97 son deliberados (ver Origen del proyecto):
 PISO = 55
 TECHO = 97
 
-# PENDIENTE DE CALIBRACIÓN — leer antes del evento.
-#
-# Con COMPONENTES_CONTADOS = 7 hay que cubrir bien los SIETE componentes para
-# acercarse al techo. Pero la mayoría de respuestas honestas cubren dos o tres:
-# el ejemplo real de la reunión fundacional (analista de datos), que ChatGPT
-# calificó con 82%, bajo esta rúbrica saca alrededor de 68%.
-#
-# No es un error de la fórmula: es que la vara cambió. Pero la expectativa del
-# equipo está anclada en ese 82%, así que hay que decidir con respuestas reales:
-#
-#   - Dejarlo en 7  -> escala exigente, casi todos entre 60% y 80%.
-#   - Bajarlo a 4   -> se puntúan los 4 componentes mejor cubiertos y se ignoran
-#                      los demás. Premia la profundidad sobre el listado, y
-#                      reproduce mejor el 82% del ejemplo.
-#
-# Cambiar este valor cambia los puntajes: si se toca, subir RUBRICA_VERSION en
-# prompt.py, porque invalida la comparación con diagnósticos anteriores.
+# Se califica sobre los 7 componentes — ninguno se descarta del puntaje.
 COMPONENTES_CONTADOS = 7
 
 MAX_PUNTOS = COMPONENTES_CONTADOS * 4
+
+# Decisión 2026-08-18: piso SOLO para el % global, en unidades de nivel
+# (sobre 4). NO se usa para el desglose por componente — ver
+# porcentaje_componente() más abajo: ese debe ser honesto (0% si no hay
+# evidencia), porque es información real para la persona (qué le falta cubrir)
+# y para los reportes agregados de los líderes de área ("el equipo de
+# facturación no está mencionando compromiso ambiental" es una señal útil;
+# "todos tienen 25% mínimo por diseño" no lo es — inventar un número ahí
+# fue el intento anterior y no es honesto, aunque la intención de no castigar
+# fuera correcta).
+#
+# Lo que SÍ se ablanda es el % global: alguien que solo cubre 2-3 componentes
+# bien no debería caer a ~45% solo por no haber escrito sobre los otros 4 en
+# un párrafo — de ahí este piso interno, que nunca se expone tal cual, solo
+# a través del % global ya comprimido entre PISO y TECHO.
+#
+# NIVEL_PISO=1 (de 4) equivale a asumir un mínimo del 25% "en unidades de
+# nivel" únicamente para la suma que alimenta el % global. Cambiar este valor
+# cambia los puntajes: si se toca, subir RUBRICA_VERSION en prompt.py, porque
+# invalida la comparación con diagnósticos anteriores.
+NIVEL_PISO = 1
 
 BANDAS = [
     (93, "Talento referente Susana"),
@@ -44,11 +49,25 @@ BANDAS = [
 ]
 
 
+def _nivel_efectivo(nivel: int) -> float:
+    """Aplica el piso institucional a un nivel 0-4 crudo del modelo."""
+    nivel = max(0, min(nivel, 4))
+    return NIVEL_PISO + (4 - NIVEL_PISO) * nivel / 4
+
+
 def calcular_porcentaje(componentes: list[dict]) -> int:
-    niveles = sorted((int(c["nivel"]) for c in componentes), reverse=True)
-    suma = sum(niveles[:COMPONENTES_CONTADOS])
+    efectivos = [_nivel_efectivo(int(c["nivel"])) for c in componentes]
+    suma = sum(efectivos[:COMPONENTES_CONTADOS])
     suma = max(0, min(suma, MAX_PUNTOS))
     return round(PISO + (TECHO - PISO) * suma / MAX_PUNTOS)
+
+
+def porcentaje_componente(nivel: int) -> int:
+    """% individual mostrado en 'Cómo se ve tu huella'. SIN piso: honesto,
+    0-100% real según el nivel que asignó el modelo. La UI (script.js) no
+    muestra "0%" en crudo para no desalentar — pinta un estado neutral
+    ("aún sin evidencia") en vez de fabricar un número."""
+    return round(max(0, min(int(nivel), 4)) / 4 * 100)
 
 
 def nivel_cualitativo(porcentaje: int) -> str:

@@ -1,6 +1,9 @@
 // Punto de entrada de la API. Debe coincidir con el connect-src del CSP
-// declarado en netlify.toml.
-const API = 'https://induccion-hslv-api.onrender.com';
+// declarado en netlify.toml. En localhost apunta a la API local (mismo
+// patrón que dashboard.js/login.js/asistencia.js).
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000'
+  : 'https://induccion-hslv-api.onrender.com';
 
 const MIN_CARACTERES = 120;
 const ESPERA_MS = 2500;      // cada cuánto se pregunta por el diagnóstico
@@ -82,7 +85,7 @@ form.addEventListener('submit', async (e) => {
 
     if (r.status === 422) {
       status.textContent = 'Revisa los datos: la cédula debe ser solo números ' +
-        'y la respuesta debe tener entre 120 y 1200 caracteres.';
+        'y la respuesta debe tener entre 120 y 2000 caracteres.';
     } else {
       status.textContent = 'No pudimos registrar tu respuesta. Intenta de nuevo ' +
         'en un momento.';
@@ -173,19 +176,26 @@ function pintarResultado(d) {
   const lista = document.getElementById('lista-componentes');
   lista.textContent = '';
   for (const c of d.componentes) {
+    // Sin evidencia en esta respuesta: no se muestra en blanco, se omite.
+    if (!c.nivel) continue;
+
     const li = document.createElement('li');
-    if (!c.nivel) li.className = 'vacio';
 
     const nombre = document.createElement('span');
     nombre.textContent = c.nombre;
 
+    const pct = c.porcentaje;
+    const cifraPct = document.createElement('span');
+    cifraPct.className = 'c-pct';
+    cifraPct.textContent = `${pct}%`;
+
     const barra = document.createElement('span');
     barra.className = 'c-barra';
     const relleno = document.createElement('i');
-    relleno.style.width = `${(c.nivel / 4) * 100}%`;
+    relleno.style.width = `${pct}%`;
     barra.appendChild(relleno);
 
-    li.append(nombre, barra);
+    li.append(nombre, cifraPct, barra);
     lista.appendChild(li);
   }
 

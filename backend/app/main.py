@@ -16,6 +16,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from . import db
 from .config import cfg
+from .worker.puntaje import porcentaje_componente
 
 # El access log de uvicorn no se guarda: las peticiones llevan la respuesta
 # confidencial del colaborador en el cuerpo. Ver Confidencialidad y privacidad.
@@ -71,7 +72,7 @@ class RespuestaIn(BaseModel):
     nombre: str = Field(min_length=3, max_length=120)
     cedula: str = Field(min_length=5, max_length=15)
     area: str = Field(min_length=2, max_length=80)
-    texto: str = Field(min_length=120, max_length=1200)
+    texto: str = Field(min_length=120, max_length=2000)
     correo: EmailStr | None = None
 
     @field_validator("cedula")
@@ -207,7 +208,12 @@ async def obtener_diagnostico(respuesta_id: str):
         "proximo_paso": payload.get("proximo_paso", {}),
         "mensaje_cierre": payload.get("mensaje_cierre", ""),
         "componentes": [
-            {"id": c.get("id"), "nombre": c.get("nombre"), "nivel": c.get("nivel")}
+            {
+                "id": c.get("id"),
+                "nombre": c.get("nombre"),
+                "nivel": c.get("nivel"),
+                "porcentaje": porcentaje_componente(c.get("nivel", 0)),
+            }
             for c in payload.get("componentes", [])
         ],
     }
@@ -358,7 +364,12 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
         if f["payload"] is not None:
             payload = json.loads(f["payload"])
             componentes = [
-                {"id": c.get("id"), "nombre": c.get("nombre"), "nivel": c.get("nivel")}
+                {
+                    "id": c.get("id"),
+                    "nombre": c.get("nombre"),
+                    "nivel": c.get("nivel"),
+                    "porcentaje": porcentaje_componente(c.get("nivel", 0)),
+                }
                 for c in payload.get("componentes", [])
             ]
         filas_json.append({

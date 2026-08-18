@@ -182,6 +182,7 @@ class Router:
                 "temperature": ruta.p.temperatura,
                 "max_tokens": ruta.p.max_tokens,
                 "response_format": {"type": "json_object"},
+                **ruta.p.extra,
             },
             timeout=ruta.p.timeout_s,
         )

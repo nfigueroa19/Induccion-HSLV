@@ -334,11 +334,16 @@ button.submit[disabled] {
 .componentes { list-style: none; margin: 0; padding: 0; }
 .componentes li {
   display: grid;
-  grid-template-columns: 1fr 84px;
+  grid-template-columns: 1fr 34px 84px;
   align-items: center;
   gap: 10px;
   padding: 5px 0;
   font-size: 12.5px;
+}
+.c-pct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-soft);
 }
 .c-barra {
   height: 7px;
@@ -352,8 +357,6 @@ button.submit[disabled] {
   border-radius: 4px;
   background: var(--color-accent);
 }
-.componentes li.vacio { color: var(--color-ink-soft); }
-
 .cierre {
   font-size: 14px !important;
   line-height: 1.6;
@@ -371,7 +374,7 @@ button.submit[disabled] {
   .gauge { width: 102px; }
   .porcentaje { font-size: 40px; }
   #modal h2 { font-size: 18.5px; }
-  .componentes li { grid-template-columns: 1fr 68px; }
+  .componentes li { grid-template-columns: 1fr 30px 68px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -82,8 +82,8 @@
 
       <div class="field">
         <label for="pregunta">¿Quién eres como persona y como trabajador?</label>
-        <textarea id="pregunta" name="pregunta" minlength="120" maxlength="1200" autocomplete="off" required></textarea>
-        <p class="counter"><span id="contador">0</span>/1200</p>
+        <textarea id="pregunta" name="pregunta" minlength="120" maxlength="2000" autocomplete="off" required></textarea>
+        <p class="counter"><span id="contador">0</span>/2000</p>
       </div>
 
       <div class="confidential">
@@ -129,8 +129,8 @@
       </div>
       <div class="cifra">
         <p class="porcentaje"><span id="pct">0</span><span class="signo">%</span></p>
-        <h2 id="modal-titulo">—</h2>
         <p class="cifra-nota">de alineación con la cultura institucional</p>
+        <h2 id="modal-titulo">—</h2>
       </div>
     </div>
 
@@ -154,7 +154,7 @@
 
     <div class="confidential">
       <div class="dot" aria-hidden="true"></div>
-      <p>Este resultado es solo tuyo. Nadie más lo ve: los líderes de área únicamente reciben promedios por equipo.</p>
+      <p>Este resultado es solo tuyo. Nadie más lo ve. El sistema recopila únicamente promedios por áreas.</p>
     </div>
   </div>
 
@@ -166,6 +166,8 @@
   <button class="submit" id="cerrar-modal" type="button">Cerrar</button>
 </dialog>
 
-<script src="js/script.js"></script>
+<!-- ?v= es cache-buster manual: python -m http.server no manda Cache-Control,
+     así que el navegador puede quedarse con una copia vieja en dev local. -->
+<script src="js/script.js?v=20260818c"></script>
 </body>
 </html>

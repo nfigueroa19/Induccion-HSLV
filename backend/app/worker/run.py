@@ -13,10 +13,13 @@ import time
 from .. import db
 from ..config import cfg
 from .prompt import PROMPT_VERSION, RUBRICA_VERSION, construir_mensajes
+from . import puntaje
 from .puntaje import calcular_porcentaje, nivel_cualitativo
 from .router import Router, SinRutasDisponibles
 
 log = logging.getLogger("worker")
+log.info("puntaje.py cargado desde %s (NIVEL_PISO=%s COMPONENTES_CONTADOS=%s)",
+          puntaje.__file__, puntaje.NIVEL_PISO, puntaje.COMPONENTES_CONTADOS)
 
 _router: Router | None = None
 
@@ -139,7 +142,9 @@ async def loop() -> None:
 
     while True:
         try:
-            lote = await pool.fetch("select * from claim_respuestas($1)", cfg.worker_lote)
+            lote = await pool.fetch(
+                "select * from claim_respuestas($1, $2)", cfg.worker_lote, cfg.campana
+            )
 
             if not lote:
                 await asyncio.sleep(cfg.worker_pausa_seg)

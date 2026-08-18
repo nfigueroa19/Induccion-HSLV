@@ -2,7 +2,7 @@
 // el DOM o pedir datos, para no dejar la tabla vacía parpadeando ni gastar
 // una llamada al backend que de todos modos va a devolver 401.
 if (!sessionStorage.getItem('admin_token')) {
-  location.replace('login.html');
+  location.replace('/login');
   throw new Error('sin sesión');
 }
 
@@ -21,6 +21,7 @@ const resumenPromedio = document.getElementById('resumen-promedio');
 const filtroBusqueda = document.getElementById('filtro-busqueda');
 const filtroArea = document.getElementById('filtro-area');
 const filtroEstado = document.getElementById('filtro-estado');
+const filtroPct = document.getElementById('filtro-pct');
 
 let datos = [];
 let filaAbierta = null;
@@ -46,7 +47,7 @@ document.getElementById('cerrar-sesion').addEventListener('click', cerrarSesion)
 function cerrarSesion() {
   sessionStorage.removeItem('admin_token');
   sessionStorage.removeItem('admin_actividad');
-  location.replace('login.html');
+  location.replace('/login');
 }
 
 async function cargar() {
@@ -84,17 +85,35 @@ function poblarFiltroArea() {
   filtroArea.dataset.poblado = '1';
 }
 
-[filtroBusqueda, filtroArea, filtroEstado].forEach((el) =>
+[filtroBusqueda, filtroArea, filtroEstado, filtroPct].forEach((el) =>
   el.addEventListener('input', dibujar));
 
 function filtrar() {
   const q = filtroBusqueda.value.trim().toLowerCase();
-  return datos.filter((d) => {
+  const pct = filtroPct.value;
+
+  const filas = datos.filter((d) => {
     if (filtroArea.value && d.area !== filtroArea.value) return false;
     if (filtroEstado.value && d.estado !== filtroEstado.value) return false;
     if (q && !`${d.nombre} ${d.cedula}`.toLowerCase().includes(q)) return false;
+    if (pct === 'alto' && !(d.porcentaje != null && d.porcentaje >= 80)) return false;
+    if (pct === 'medio' && !(d.porcentaje != null && d.porcentaje >= 50 && d.porcentaje < 80)) return false;
+    if (pct === 'bajo' && !(d.porcentaje != null && d.porcentaje < 50)) return false;
+    if (pct === 'sin' && d.porcentaje != null) return false;
     return true;
   });
+
+  if (pct === 'desc' || pct === 'asc') {
+    const signo = pct === 'desc' ? -1 : 1;
+    filas.sort((a, b) => {
+      if (a.porcentaje == null && b.porcentaje == null) return 0;
+      if (a.porcentaje == null) return 1;
+      if (b.porcentaje == null) return -1;
+      return signo * (a.porcentaje - b.porcentaje);
+    });
+  }
+
+  return filas;
 }
 
 function dibujar() {

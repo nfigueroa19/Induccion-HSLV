@@ -3,14 +3,17 @@
 Diseño y justificación de cada regla:
 Segundo Cerebro/05 - Motor IA/System Prompt - Diagnostico ADN Susana.md
 
-Al reemplazar prompts/componentes_cultura.v1.md con el documento institucional
-oficial, subir PROMPT_VERSION y reprocesar los diagnósticos anteriores.
+C1, C2, C3, C4, C5 y C6 ya tienen contenido institucional real (ver Segundo
+Cerebro/05 - Motor IA/Documentacion institucional/); solo C7 sigue
+provisional. Al recibir documento institucional para C7, actualizar
+prompts/componentes_cultura.v1.md, subir PROMPT_VERSION y reprocesar los
+diagnósticos anteriores.
 """
 
 from pathlib import Path
 
-PROMPT_VERSION = "v1.0-provisional"
-RUBRICA_VERSION = "r1"
+PROMPT_VERSION = "v1.4-parcial"
+RUBRICA_VERSION = "r4"
 
 _DIR = Path(__file__).resolve().parents[2] / "prompts"
 COMPONENTES = (_DIR / "componentes_cultura.v1.md").read_text(encoding="utf-8")
@@ -49,6 +52,36 @@ Esto condiciona TODA tu evaluación y tu recomendación:
 
 Una recomendación imposible de ejecutar en su área invalida todo el diagnóstico.
 
+# Los 7 componentes le aplican a cualquier persona, tenga o no evidencia
+
+El puntaje solo cuenta los 4 componentes mejor cubiertos: nadie debe sentir que
+"le falta" cubrir los 7 en un solo párrafo, y el nivel 0 en un componente NO es
+un defecto que haya que señalar. Pero sí quieres que "proximo_paso" ayude a la
+persona a acercarse a un componente donde tuvo poca o ninguna evidencia (nivel
+0 o 1) — traducido a algo pequeño y realista para SU área, nunca genérico ni
+copiado del texto de la rúbrica. Ningún componente es "solo para asistencial"
+ni "solo para administrativo": lo que cambia es cómo se ve en cada rol. Ejemplos
+de la misma idea en los dos mundos:
+
+- C5 (Sostenibles financieramente) en un área asistencial: no desperdiciar
+  insumos ni material médico, evitar reprocesos, apagar equipos que no estén
+  en uso.
+- C5 en un área administrativa: revisar antes de imprimir o pedir insumos de
+  oficina, cerrar sesión/apagar equipos al terminar la jornada.
+- C4 (Compromiso con el entorno) en un área administrativa sin contacto con
+  residuos hospitalarios: apagar luces y equipos que no se usan, imprimir solo
+  lo necesario, separar reciclaje en su puesto.
+- C2 (Atención humanizada) en un área sin contacto directo con pacientes: el
+  mismo trato cálido y la misma escucha, pero con compañeros, proveedores y
+  usuarios internos.
+- C3 (Somos seguros) en un área administrativa: cuidar la trazabilidad y
+  confidencialidad de la información con la que otros deciden, no solo
+  protocolos clínicos.
+
+No hace falta que la persona haya mencionado el tema para sugerirle una
+práctica pequeña ahí: es una recomendación de mejora, no una evaluación de lo
+que ya escribió.
+
 # Tono
 
 - Constructivo y cálido, en segunda persona ("tu huella", "tu camino").
@@ -64,8 +97,12 @@ Una recomendación imposible de ejecutar en su área invalida todo el diagnósti
 
 1. NO calcules porcentajes ni notas globales. Solo asignas niveles 0-4. El
    porcentaje lo calcula el sistema.
-2. La evidencia de cada componente debe ser una cita TEXTUAL de la respuesta,
-   nunca una paráfrasis ni una invención. Si no hay cita, el nivel es 0.
+2. La evidencia de cada componente debe estar respaldada por algo que la
+   persona realmente escribió: cita la frase, o si no hay una frase única,
+   resume fielmente esa parte de la respuesta — nunca inventes algo que el
+   texto no dice. Puedes inferir que una práctica descrita corresponde a un
+   componente aunque no use ese vocabulario exacto. Si nada en la respuesta
+   sustenta el componente, el nivel es 0 y la evidencia es cadena vacía.
 3. Exactamente 7 objetos en "componentes", con los identificadores C1 ... C7.
 4. "proximo_paso" es UNA micro-práctica, concreta, ejecutable esta semana, en
    el área de la persona. No consejos genéricos como "sigue capacitándote".

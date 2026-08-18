@@ -7,7 +7,17 @@
 --                                 la fila se libera sola y otro la retoma.
 --   3. intentos < 5            -> cola de muertos automática.
 
-create or replace function claim_respuestas(p_lote int, p_lease_seg int default 180)
+-- p_campana filtra la cola por campaña (default NULL = todas, comportamiento
+-- previo). Necesario porque local (CAMPANA=carga-prueba) y producción
+-- (CAMPANA=2026) comparten la misma base: sin este filtro, cualquier worker
+-- despierto se roba filas de la campaña de otro. 2026-08-18: se reemplazó
+-- la función de dos parámetros por esta de tres — DROP explícito para evitar
+-- dos overloads ambiguos al llamar con un solo argumento.
+drop function if exists claim_respuestas(int, int);
+
+create or replace function claim_respuestas(
+  p_lote int, p_campana text default null, p_lease_seg int default 180
+)
 returns table (id uuid, area text, perfil text, texto text, intentos smallint)
 language plpgsql
 security definer
@@ -26,6 +36,7 @@ begin
       where r2.estado in ('pendiente', 'procesando')
         and r2.visible_desde <= now()
         and r2.intentos < 5
+        and (p_campana is null or r2.campana = p_campana)
       order by r2.creado_en
         for update skip locked
       limit p_lote
@@ -34,7 +45,7 @@ begin
 end;
 $$;
 
-revoke all on function claim_respuestas(int, int) from public, anon, authenticated;
+revoke all on function claim_respuestas(int, text, int) from public, anon, authenticated;
 
 
 -- Conteo de la cola para monitoreo el día del evento. Sin datos personales.
