@@ -17,3 +17,6 @@ venv/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Logs de depuración locales
+backend/groq_error*.txt

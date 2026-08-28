@@ -81,8 +81,30 @@
       </div>
 
       <div class="field">
-        <label for="pregunta">¿Quién eres como persona y como trabajador?</label>
-        <textarea id="pregunta" name="pregunta" minlength="120" maxlength="2000" autocomplete="off" required></textarea>
+        <p class="chips-eyebrow">Piensa en los 7 pilares al responder</p>
+
+        <div class="pilares-table-wrap">
+          <table class="pilares-table">
+            <thead>
+              <tr>
+                <th scope="col">Pilar</th>
+                <th scope="col">Palabra clave de apoyo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Hospital Universitario</td><td>docencia, investigación</td></tr>
+              <tr><td>Atención Humanizada centrada en la persona</td><td>trato humano, escucha</td></tr>
+              <tr><td>Seguridad del Paciente</td><td>seguridad, protocolos</td></tr>
+              <tr><td>Compromiso con el Entorno</td><td>ambiental, social</td></tr>
+              <tr><td>Sostenibilidad</td><td>uso responsable de los recursos</td></tr>
+              <tr><td>Gestión del Conocimiento</td><td>documentar, mejorar procesos</td></tr>
+              <tr><td>Planeación y Calidad</td><td>mejora continua</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <label for="pregunta">Según los pilares de la Cultura Susana, ¿quién eres como persona y trabajador del HSLV, qué haces diariamente en tu área y cómo aportas a la atención de nuestros usuarios?</label>
+        <textarea id="pregunta" name="pregunta" minlength="200" maxlength="2000" autocomplete="off" required></textarea>
         <p class="counter"><span id="contador">0</span>/2000</p>
       </div>
 
@@ -150,6 +172,11 @@
       <ul class="componentes" id="lista-componentes"></ul>
     </section>
 
+    <section class="bloque" id="seccion-sugerencias" hidden>
+      <h3>Para seguir explorando</h3>
+      <ul class="sugerencias" id="lista-sugerencias"></ul>
+    </section>
+
     <p class="cierre" id="txt-cierre"></p>
 
     <div class="confidential">
@@ -168,6 +195,6 @@
 
 <!-- ?v= es cache-buster manual: python -m http.server no manda Cache-Control,
      así que el navegador puede quedarse con una copia vieja en dev local. -->
-<script src="js/script.js?v=20260818c"></script>
+<script src="js/script.js?v=20260818e"></script>
 </body>
 </html>

@@ -1,11 +1,9 @@
 <!--
-  C1, C2, C3, C4, C5, C6: contenido institucional real, recibido de los
-  líderes de proceso respectivos (ver Segundo Cerebro/05 - Motor IA/
-  Documentacion institucional/). Solo C7 sigue siendo PROVISIONAL —
-  reconstruido de la reunión fundacional, sin documento institucional propio
-  todavía.
+  C1 a C7: contenido institucional real, recibido de los líderes de proceso
+  respectivos (ver Segundo Cerebro/05 - Motor IA/Documentacion institucional/).
+  Ningún componente queda ya provisional (C7 llegó el 2026-08-20).
 
-  Cuando llegue documento para C7:
+  Si llega una versión revisada de algún documento:
     1. Reemplazar solo esa sección.
     2. Subir PROMPT_VERSION en app/worker/prompt.py.
     3. Reprocesar los diagnósticos generados con la versión anterior
@@ -162,14 +160,42 @@ que funciona en vez de guardarlo solo para uno mismo.
 
 ## C7 — Planeación estratégica y calidad
 
-> Provisional — solo se cuenta con una mención tangencial dentro del documento
-> de Gestión del Conocimiento e Innovación, sin documento institucional propio
-> todavía.
+La calidad como forma de actuar cotidiana, no como requisito administrativo:
+principios del Sistema Único de Acreditación (SUA), mejoramiento continuo,
+enfoque hacia el riesgo y orientación a resultados. Marco de fondo: **Plan
+Estratégico y de Desarrollo 2024–2034** — "Por la excelencia con innovación y
+transformación integral".
 
-Marco: **Plan Estratégico y de Desarrollo 2024–2034** — "Por la excelencia con
-innovación y transformación integral" —, cuyo objetivo estratégico No. 3 es
-generar innovación y gestión del conocimiento como motor de transformación
-institucional.
+- **Pensamiento estratégico**: conoce el Direccionamiento Estratégico
+  institucional (misión, visión, Plan Estratégico de Desarrollo, Plan de
+  Acción) y alinea sus decisiones diarias con las metas de la organización.
+- **Ciclo PHVA** (Planear-Hacer-Verificar-Actuar): planea antes de actuar,
+  ejecuta conforme a lo establecido, verifica los resultados frente a lo
+  esperado y, ante una desviación u oportunidad de mejora, la documenta y
+  propone acciones correctivas o de prevención en vez de dejarla pasar.
+- **Gestión del riesgo**: anticipa riesgos asistenciales, administrativos y de
+  seguridad del paciente, y actúa de forma proactiva antes de que se
+  conviertan en eventos adversos — reporta oportunamente en lugar de esperar
+  a que se materialicen.
+- **Orientación a resultados y al usuario**: entiende que la calidad se mide
+  en la satisfacción y seguridad del paciente, con sentido de pertenencia
+  hacia el logro de indicadores.
+- **Articulación con MIPG**: participa en comités, autoevaluaciones y
+  ejercicios de rendición de cuentas del Modelo Integrado de Planeación y
+  Gestión — comités de Calidad, Seguridad del Paciente, Gobierno Clínico.
+- **Disciplina documental**: registro oportuno y veraz de evidencias, planes
+  de mejoramiento y trazabilidad de compromisos; usa indicadores de gestión y
+  tableros de control (semáforos) para tomar decisiones con evidencia.
+- **Herramientas institucionales**: Sistema Único de Acreditación (SUA) y
+  Camino a la Excelencia, PAMEC (Programa de Auditoría para el Mejoramiento
+  Continuo de la Calidad), matrices de riesgo, planes de mejoramiento.
 
-Objetivos institucionales, indicadores, mejora continua, acreditación,
-alineación del trabajo diario con las metas del hospital.
+En la práctica asistencial: planear la atención antes del procedimiento
+(verificar historia clínica, protocolos, recursos disponibles), aplicar PHVA
+en el cuidado diario, reportar desviaciones o barreras de seguridad por los
+canales institucionales en vez de callarlas.
+
+En la práctica administrativa: planear la actividad antes de ejecutarla
+identificando qué objetivo institucional apoya y qué evidencia debe dejar,
+aplicar PHVA en la gestión propia, participar en comités y autoevaluaciones
+aportando información veraz y oportuna.

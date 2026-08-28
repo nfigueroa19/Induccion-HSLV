@@ -11,6 +11,7 @@ import logging
 import time
 
 from .. import db
+from .. import eventos
 from ..config import cfg
 from .prompt import PROMPT_VERSION, RUBRICA_VERSION, construir_mensajes
 from . import puntaje
@@ -124,6 +125,7 @@ async def procesar(fila, pool) -> None:
     await _telemetria(pool, fila["id"], ruta.id, ruta.modelo, latencia, "ok")
     log.info("ok respuesta=%s ruta=%s pct=%s ms=%s",
              fila["id"], ruta.id, porcentaje, latencia)
+    eventos.avisar_diagnostico_nuevo()
 
 
 async def loop() -> None:

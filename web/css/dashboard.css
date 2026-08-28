@@ -155,12 +155,52 @@ main { padding: 32px 36px 56px; }
 }
 .barra-puesto {
   flex-shrink: 0;
-  width: 22px;
+  width: 46px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
   font-size: 12px;
   font-weight: 700;
   color: var(--color-ink-soft);
   font-variant-numeric: tabular-nums;
 }
+.barra-podio { border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border)); }
+
+/* Círculo numerado del podio (1-3): mismo lenguaje visual que .escala-num en
+   el panel de detalle, no un ícono nuevo. Intensidad decreciente del verde
+   de marca por puesto — no es semáforo, es un solo tono en tres pasos. */
+.barra-puesto-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.barra-puesto-num.nivel-1 { background: var(--color-primary); }
+.barra-puesto-num.nivel-2 { background: color-mix(in srgb, var(--color-primary) 70%, var(--color-accent)); }
+.barra-puesto-num.nivel-3 { background: color-mix(in srgb, var(--color-primary) 40%, var(--color-accent)); }
+
+/* Flecha de cambio de puesto: mismo verde de marca al subir, el ámbar del
+   anillo "bajo" al bajar — nunca rojo, para no leerse como una falta. */
+.barra-cambio {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.barra-cambio.sube { color: var(--color-primary); }
+.barra-cambio.baja { color: var(--ring-bajo); }
+
+/* Pulso breve cuando a un área le llega una respuesta nueva entre refrescos. */
+@keyframes pulso-respuesta {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-accent) 0%, transparent); }
+}
+.barra-nueva-respuesta { animation: pulso-respuesta 900ms ease-out; }
 .barra-cuerpo {
   flex: 1;
   min-width: 0;
@@ -291,4 +331,5 @@ main { padding: 32px 36px 56px; }
 
 @media (prefers-reduced-motion: reduce) {
   .barra-area, .barra-relleno { transition: none; }
+  .barra-nueva-respuesta { animation: none; }
 }

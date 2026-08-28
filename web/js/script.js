@@ -5,7 +5,7 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
   ? 'http://localhost:8000'
   : 'https://induccion-hslv-api.onrender.com';
 
-const MIN_CARACTERES = 120;
+const MIN_CARACTERES = 200;
 const ESPERA_MS = 2500;      // cada cuánto se pregunta por el diagnóstico
 const INTENTOS_MAX = 40;     // ~100 s antes de rendirse
 
@@ -85,7 +85,7 @@ form.addEventListener('submit', async (e) => {
 
     if (r.status === 422) {
       status.textContent = 'Revisa los datos: la cédula debe ser solo números ' +
-        'y la respuesta debe tener entre 120 y 2000 caracteres.';
+        'y la respuesta debe tener entre 200 y 2000 caracteres.';
     } else {
       status.textContent = 'No pudimos registrar tu respuesta. Intenta de nuevo ' +
         'en un momento.';
@@ -174,10 +174,26 @@ function pintarResultado(d) {
   document.getElementById('txt-cierre').textContent = d.mensaje_cierre || '';
 
   const lista = document.getElementById('lista-componentes');
+  const listaSugerencias = document.getElementById('lista-sugerencias');
+  const seccionSugerencias = document.getElementById('seccion-sugerencias');
   lista.textContent = '';
+  listaSugerencias.textContent = '';
+
   for (const c of d.componentes) {
-    // Sin evidencia en esta respuesta: no se muestra en blanco, se omite.
-    if (!c.nivel) continue;
+    // Sin evidencia en esta respuesta: no se muestra en 0%, pasa a sugerencia.
+    if (!c.nivel) {
+      if (!c.sugerencia) continue;
+      const li = document.createElement('li');
+      const nombre = document.createElement('span');
+      nombre.className = 's-nombre';
+      nombre.textContent = c.nombre;
+      const texto = document.createElement('span');
+      texto.className = 's-texto';
+      texto.textContent = c.sugerencia;
+      li.append(nombre, texto);
+      listaSugerencias.appendChild(li);
+      continue;
+    }
 
     const li = document.createElement('li');
 
@@ -198,6 +214,8 @@ function pintarResultado(d) {
     li.append(nombre, cifraPct, barra);
     lista.appendChild(li);
   }
+
+  seccionSugerencias.hidden = listaSugerencias.childElementCount === 0;
 
   mostrarPane(paneResultado);
 

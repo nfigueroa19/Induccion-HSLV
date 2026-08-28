@@ -96,9 +96,11 @@ alter table diagnosticos   enable row level security;
 alter table eventos_worker enable row level security;
 
 -- ---------------------------------------------------------------------------
--- Reporte agregado por área, con k-anonimato.
--- Los grupos de menos de 5 personas no aparecen: en un área de 2, el "promedio"
--- es el diagnóstico individual disfrazado.
+-- Reporte agregado por área.
+-- Sin umbral mínimo de respuestas: todas las áreas se muestran desde la
+-- primera respuesta (decisión del usuario 2026-08-20 — ninguna área tiene
+-- grupos de 1-2 personas, así que el riesgo de k-anonimato del "promedio
+-- disfrazando el diagnóstico individual" no aplica en este roster).
 -- Fusiona asistencial + administrativo: el dashboard ya no distingue perfil,
 -- solo el área (ver Segundo Cerebro/06 - Frontend/Identidad visual y diseno.md).
 -- drop + create porque Postgres no permite quitar columnas (perfil) de una
@@ -114,8 +116,7 @@ select r.area,
        max(d.porcentaje_global)        as maximo
 from diagnosticos d
 join respuestas r on r.id = d.respuesta_id
-group by r.area, r.campana
-having count(*) >= 5;
+group by r.area, r.campana;
 
 -- Fortalezas y debilidades por área, para los líderes.
 -- Desarma el JSON de componentes y promedia el nivel de cada uno.
@@ -130,5 +131,4 @@ select r.area,
 from diagnosticos d
 join respuestas r on r.id = d.respuesta_id
 cross join lateral jsonb_array_elements(d.payload -> 'componentes') as c
-group by r.area, r.campana, c ->> 'id', c ->> 'nombre'
-having count(*) >= 5;
+group by r.area, r.campana, c ->> 'id', c ->> 'nombre';

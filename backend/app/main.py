@@ -10,11 +10,13 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from . import db
+from . import eventos
 from .config import cfg
 from .worker.puntaje import porcentaje_componente
 
@@ -72,7 +74,7 @@ class RespuestaIn(BaseModel):
     nombre: str = Field(min_length=3, max_length=120)
     cedula: str = Field(min_length=5, max_length=15)
     area: str = Field(min_length=2, max_length=80)
-    texto: str = Field(min_length=120, max_length=2000)
+    texto: str = Field(min_length=200, max_length=2000)
     correo: EmailStr | None = None
 
     @field_validator("cedula")
@@ -213,21 +215,20 @@ async def obtener_diagnostico(respuesta_id: str):
                 "nombre": c.get("nombre"),
                 "nivel": c.get("nivel"),
                 "porcentaje": porcentaje_componente(c.get("nivel", 0)),
+                "sugerencia": c.get("sugerencia", ""),
             }
             for c in payload.get("componentes", [])
         ],
     }
 
 
-@app.get("/v1/dashboard")
-async def dashboard():
+async def _indicadores_dashboard() -> dict:
     """Indicadores agregados para el panel de comunicaciones/líderes.
 
-    Sin token: lo que expone ya es agregado y anónimo (v_agregado_area y
-    v_componentes_area excluyen grupos de menos de 5 personas desde la vista
-    misma — ver 001_schema.sql). Nunca hay texto ni identidad de nadie aquí.
-    Asistencial y administrativo van fusionados: el dashboard ya no distingue
-    perfil, solo área.
+    Sin token: lo que expone ya es agregado y anónimo (sin umbral mínimo de
+    respuestas por área — decisión del usuario 2026-08-20, ver 001_schema.sql).
+    Nunca hay texto ni identidad de nadie aquí. Asistencial y administrativo
+    van fusionados: el dashboard ya no distingue perfil, solo área.
     """
     p = await db.pool()
     areas = await p.fetch(
@@ -262,6 +263,56 @@ async def dashboard():
         "areas": [dict(f) for f in areas],
         "componentes": [dict(f) for f in componentes],
     }
+
+
+@app.get("/v1/dashboard")
+async def dashboard():
+    return await _indicadores_dashboard()
+
+
+@app.get("/v1/dashboard/stream")
+async def dashboard_stream():
+    """Mismos datos que /v1/dashboard, empujados por SSE en vez de sondeados.
+
+    El worker avisa (eventos.avisar_diagnostico_nuevo) apenas graba un
+    diagnóstico nuevo; este generador se despierta al instante y reenvía el
+    estado completo. Sin aviso en 15s, igual vuelve a consultar y manda el
+    estado (no un simple ping): así el stream se autosana si algo escribió en
+    la base sin pasar por el worker de este proceso — por ejemplo un script
+    de datos aparte, o el worker corriendo en otro proceso el día que se
+    separe del plan gratuito (ver eventos.py) — y de paso evita que Render (o
+    cualquier proxy intermedio) corte la conexión por inactividad.
+    """
+    async def generador():
+        q = eventos.suscribirse()
+        try:
+            while True:
+                try:
+                    # jsonable_encoder, no json.dumps a secas: nivel_promedio
+                    # sale de Postgres como Decimal (round(...,2) en la vista),
+                    # y json.dumps no sabe serializarlo — reventaba el stream
+                    # a medio mandar (ERR_INCOMPLETE_CHUNKED_ENCODING).
+                    cuerpo = jsonable_encoder(await _indicadores_dashboard())
+                    yield f"data: {json.dumps(cuerpo)}\n\n"
+                except Exception:
+                    log.exception("fallo consultando indicadores para el stream; se reintenta")
+                try:
+                    await asyncio.wait_for(q.get(), timeout=15)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            eventos.desuscribirse(q)
+
+    return StreamingResponse(
+        generador(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            # Nginx (y proxies similares) bufferean respuestas por defecto;
+            # esta cabecera les pide no acumular antes de mandar cada chunk.
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/v1/estado")

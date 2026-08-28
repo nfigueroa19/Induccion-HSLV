@@ -6,9 +6,14 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
   ? 'http://localhost:8000'
   : 'https://induccion-hslv-api.onrender.com';
 
-// Refresco automático: el dashboard vive proyectado durante el evento y las
-// respuestas van llegando. Cada área se reordena sola cuando cambia su %.
+// Refresco: el dashboard vive proyectado durante el evento y las respuestas
+// van llegando. Primero se intenta /v1/dashboard/stream (SSE — el backend
+// empuja apenas el worker graba un diagnóstico nuevo). Si el navegador no
+// tiene EventSource, o el stream no manda nada en este plazo, se cae a
+// sondear /v1/dashboard cada tanto — red de seguridad silenciosa, nunca se
+// le muestra al usuario cuál de los dos modos quedó activo.
 const INTERVALO_REFRESCO_MS = 20000;
+const ESPERA_MAXIMA_SIN_STREAM_MS = 12000;
 
 const gridAreas = document.getElementById('grid-areas');
 const vacioAreas = document.getElementById('vacio-areas');
@@ -24,21 +29,70 @@ const resumenAreas = document.getElementById('resumen-areas');
 let datos = { total_respuestas: 0, areas: [], componentes: [] };
 let areaSeleccionada = null;
 
-cargar();
-setInterval(cargar, INTERVALO_REFRESCO_MS);
+// Estado del refresco anterior (puesto y cifras por área), para poder mostrar
+// cuánto subió/bajó cada área y detectar respuestas nuevas entre un fetch y
+// el siguiente. Queda vacío en la primera carga a propósito: no hay "cambio"
+// que anunciar todavía.
+let ordenAnterior = new Map();
+
+const prefiereMenosMovimiento =
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+iniciarActualizacion();
+
+function aplicarDatos(json) {
+  datos = json;
+  dibujarAreas();
+  if (areaSeleccionada) dibujarRadar(areaSeleccionada);
+}
 
 function cargar() {
   fetch(`${API}/v1/dashboard`)
     .then((r) => r.json())
-    .then((json) => {
-      datos = json;
-      dibujarAreas();
-      if (areaSeleccionada) dibujarRadar(areaSeleccionada);
-    })
+    .then(aplicarDatos)
     .catch(() => {
       vacioAreas.textContent = 'No se pudo cargar la información. Intenta recargar la página.';
       vacioAreas.hidden = false;
     });
+}
+
+function iniciarPolling() {
+  cargar();
+  setInterval(cargar, INTERVALO_REFRESCO_MS);
+}
+
+function iniciarActualizacion() {
+  if (typeof EventSource === 'undefined') {
+    iniciarPolling();
+    return;
+  }
+
+  let recibioAlgo = false;
+  const fuente = new EventSource(`${API}/v1/dashboard/stream`);
+
+  const vigia = setTimeout(() => {
+    if (!recibioAlgo) {
+      fuente.close();
+      iniciarPolling();
+    }
+  }, ESPERA_MAXIMA_SIN_STREAM_MS);
+
+  fuente.onmessage = (e) => {
+    recibioAlgo = true;
+    clearTimeout(vigia);
+    aplicarDatos(JSON.parse(e.data));
+  };
+
+  // EventSource reintenta solo la conexión (con backoff propio del navegador).
+  // Si nunca llegó a recibir un primer mensaje, un error es más probable que
+  // sea un problema real (backend caído, CORS) que un corte pasajero — se
+  // pasa a polling de una vez en vez de esperar los 12s completos del vigía.
+  fuente.onerror = () => {
+    if (recibioAlgo) return;
+    clearTimeout(vigia);
+    fuente.close();
+    iniciarPolling();
+  };
 }
 
 cerrarDetalle.addEventListener('click', () => {
@@ -54,28 +108,41 @@ function colorPorPct(pct) {
 
 function tarjetaKpi(area, puesto) {
   const pct = Math.max(0, Math.min(100, area.promedio));
+  const previa = ordenAnterior.get(area.area);
 
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'barra-area';
+  if (puesto <= 3) btn.classList.add('barra-podio');
   btn.dataset.area = area.area;
+  btn.dataset.pct = String(pct);
   btn.setAttribute('aria-pressed', String(area.area === areaSeleccionada));
 
+  // El podio (1-3) reemplaza el "#N" de texto por el mismo círculo numerado
+  // que ya usa la escala 0-4 del panel de detalle (.escala-num) — no un
+  // ícono nuevo, y sin repetir el número dos veces en la misma tarjeta.
+  const marcador = puesto <= 3
+    ? `<span class="barra-puesto-num nivel-${puesto}">${puesto}</span>`
+    : `#${puesto}`;
+  const cambio = cambioDePuesto(previa ? previa.puesto : null, puesto);
+
   btn.innerHTML = `
-    <span class="barra-puesto">#${puesto}</span>
+    <span class="barra-puesto">${marcador}${cambio}</span>
     <span class="barra-cuerpo">
       <span class="barra-cabecera">
         <span class="barra-nombre">${area.area}</span>
         <span class="barra-cifras">
-          <span class="barra-pct">${pct}%</span>
+          <span class="barra-pct" data-valor="${pct}" data-origen="${previa ? previa.promedio : 0}">${previa ? previa.promedio : 0}%</span>
           <span class="barra-n">${area.n} respuestas</span>
         </span>
       </span>
       <span class="barra-pista">
-        <span class="barra-relleno" style="width: ${pct}%; background: ${colorPorPct(pct)};"></span>
+        <span class="barra-relleno" style="width: ${previa ? previa.promedio : 0}%; background: ${colorPorPct(pct)};"></span>
       </span>
     </span>
   `;
+
+  if (previa && area.n > previa.n) btn.classList.add('barra-nueva-respuesta');
 
   btn.addEventListener('click', () => {
     ocultarTooltip();
@@ -87,6 +154,33 @@ function tarjetaKpi(area, puesto) {
   btn.addEventListener('mouseleave', ocultarTooltip);
 
   return btn;
+}
+
+// Flecha de cambio de puesto respecto al refresco anterior. `null` en la
+// primera carga (no hay nada que comparar) y en empate no muestra nada —
+// una flecha sin movimiento real confundiría más de lo que ayuda.
+function cambioDePuesto(puestoAnterior, puestoActual) {
+  if (puestoAnterior == null || puestoAnterior === puestoActual) return '';
+  const subio = puestoActual < puestoAnterior;
+  const delta = Math.abs(puestoActual - puestoAnterior);
+  const signo = subio ? '▲' : '▼';
+  return `<span class="barra-cambio ${subio ? 'sube' : 'baja'}" aria-hidden="true">${signo}${delta}</span>`;
+}
+
+// Cuenta ascendente/descendente del número mostrado, no solo la barra —
+// el porcentaje quieto que salta de golpe pasa desapercibido en una pantalla
+// proyectada; verlo "correr" hasta el valor nuevo se nota desde lejos.
+function animarNumero(el, desde, hasta, duracionMs = 500) {
+  if (desde === hasta) return;
+  if (prefiereMenosMovimiento) { el.textContent = `${hasta}%`; return; }
+  const inicio = performance.now();
+  function paso(ahora) {
+    const t = Math.min(1, (ahora - inicio) / duracionMs);
+    const valor = Math.round(desde + (hasta - desde) * t);
+    el.textContent = `${valor}%`;
+    if (t < 1) requestAnimationFrame(paso);
+  }
+  requestAnimationFrame(paso);
 }
 
 function mostrarTooltip(e, texto) {
@@ -129,18 +223,38 @@ function dibujarAreas() {
 
   gridAreas.querySelectorAll('.barra-area').forEach((el) => {
     const antes = previas.get(el.dataset.area);
-    if (!antes) return;
-    const despues = el.getBoundingClientRect();
-    const dx = antes.left - despues.left;
-    const dy = antes.top - despues.top;
-    if (!dx && !dy) return;
-    el.style.transition = 'none';
-    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    if (antes) {
+      const despues = el.getBoundingClientRect();
+      const dx = antes.left - despues.left;
+      const dy = antes.top - despues.top;
+      if (dx || dy) {
+        el.style.transition = 'none';
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+        requestAnimationFrame(() => {
+          el.style.transition = '';
+          el.style.transform = '';
+        });
+      }
+    }
+
+    // El HTML arranca en el valor viejo (o 0 en la primera carga) a propósito:
+    // este rAF, un tick después, dispara la transición CSS del ancho y el
+    // conteo animado del número hacia el valor real.
+    const pctEl = el.querySelector('.barra-pct');
+    const rellenoEl = el.querySelector('.barra-relleno');
+    const pctDestino = Number(pctEl.dataset.valor);
+    const pctOrigen = Number(pctEl.dataset.origen);
     requestAnimationFrame(() => {
-      el.style.transition = '';
-      el.style.transform = '';
+      rellenoEl.style.width = `${pctDestino}%`;
+      animarNumero(pctEl, pctOrigen, pctDestino);
     });
+
+    if (el.classList.contains('barra-nueva-respuesta')) {
+      el.addEventListener('animationend', () => el.classList.remove('barra-nueva-respuesta'), { once: true });
+    }
   });
+
+  ordenAnterior = new Map(filas.map((a, i) => [a.area, { puesto: i + 1, promedio: a.promedio, n: a.n }]));
 }
 
 function mostrarDetalle(area) {
