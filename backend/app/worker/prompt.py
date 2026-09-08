@@ -21,11 +21,18 @@ v1.8 (2026-08-20): regla dura 8 — permite que una misma frase sustente más
 de un componente cuando aplica genuinamente a cada uno desde un ángulo
 distinto (decisión pendiente en el hallazgo de la lectura cruzada, ya
 resuelta: sí se permite el reforzamiento entre componentes).
+
+v1.9 (2026-09-07): agrega cargo/servicio/perfil profesional del roster
+(`personal`, vía `respuestas.cargo/servicio/perfil_profesional`) como
+contexto adicional para "proximo_paso" — Perfil/Área siguen siendo lo único
+que decide las reglas duras asistencial/administrativo. Motivado por un caso
+real: alguien de Ingeniería con `personal.area` mal cargada como
+"Asistencial" (dato de Excel, no de diseño) recibió sugerencias clínicas.
 """
 
 from pathlib import Path
 
-PROMPT_VERSION = "v1.8"
+PROMPT_VERSION = "v1.9"
 RUBRICA_VERSION = "r4"
 
 _DIR = Path(__file__).resolve().parents[2] / "prompts"
@@ -50,6 +57,16 @@ una devolución constructiva anclada en la cultura institucional.
 
 Perfil: {{PERFIL}}
 Área: {{AREA}}
+Cargo: {{CARGO}}
+Servicio: {{SERVICIO}}
+Perfil profesional: {{PERFIL_PROFESIONAL}}
+
+Cargo/servicio/perfil profesional pueden venir vacíos (persona autorregistrada,
+sin fila todavía en el roster de RR.HH.) — en ese caso ignóralos y usa solo
+Perfil/Área. Cuando sí vienen, úsalos para que "proximo_paso" sea específico a
+ESE servicio (ej. "en tu turno en Urgencias" en vez de "en tu área asistencial")
+— pero Perfil/Área siguen siendo lo que decide las reglas duras de abajo, nunca
+el cargo o servicio.
 
 Esto condiciona TODA tu evaluación y tu recomendación:
 
@@ -198,7 +215,11 @@ vallas de código, sin explicaciones:
 USUARIO = "<respuesta_colaborador>\n{{TEXTO}}\n</respuesta_colaborador>"
 
 
-def construir_mensajes(perfil: str, area: str, texto: str) -> list[dict]:
+def construir_mensajes(
+    perfil: str, area: str, texto: str,
+    cargo: str | None = None, servicio: str | None = None,
+    perfil_profesional: str | None = None,
+) -> list[dict]:
     # str.format() rompería con las llaves del ejemplo JSON de arriba;
     # por eso los marcadores son {{...}} y se resuelven con replace().
     sistema = (
@@ -207,6 +228,9 @@ def construir_mensajes(perfil: str, area: str, texto: str) -> list[dict]:
         .replace("{{RUBRICA}}", RUBRICA)
         .replace("{{PERFIL}}", perfil)
         .replace("{{AREA}}", area)
+        .replace("{{CARGO}}", cargo or "(sin dato)")
+        .replace("{{SERVICIO}}", servicio or "(sin dato)")
+        .replace("{{PERFIL_PROFESIONAL}}", perfil_profesional or "(sin dato)")
     )
     return [
         {"role": "system", "content": sistema},

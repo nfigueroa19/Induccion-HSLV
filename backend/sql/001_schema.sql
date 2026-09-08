@@ -1,4 +1,4 @@
--- Esquema de la re-inducción HSLV.
+-- Esquema de la inducción HSLV.
 -- Ejecutar en el SQL Editor de Supabase. Es seguro correrlo dos veces.
 --
 -- Diseño: Segundo Cerebro/01 - Arquitectura/Arquitectura de despliegue y pipeline asincrono.md
@@ -17,7 +17,9 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Identidad, separada del contenido.
 -- El worker del motor de IA NUNCA consulta esta tabla: al LLM solo viajan
--- area, perfil y texto. Ver: Confidencialidad y privacidad.
+-- area, perfil, texto y el cargo/servicio/perfil profesional no identificable
+-- de `personal` (copiados a `respuestas`, ver 006_respuestas_perfil_roster.sql)
+-- — nunca nombre ni cédula. Ver: Confidencialidad y privacidad.
 -- ---------------------------------------------------------------------------
 create table if not exists identidades (
   id              uuid primary key default gen_random_uuid(),

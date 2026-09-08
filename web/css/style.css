@@ -8,6 +8,23 @@
   --color-navy: #29235C;
   --color-border: #DCE3D5;
   --color-field-bg: #F7F8F4;
+
+  /* Tokens de movimiento — ver skill frontend-animation. Escala compartida
+     por toda animación del sitio: nunca hardcodear un ms o cubic-bezier
+     suelto fuera de aquí. */
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --distance-micro: 4px;
+  --distance-medium: 16px;
+  --scale-large: 0.96;
 }
 
 * { box-sizing: border-box; }
@@ -27,6 +44,22 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(var(--distance-medium)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar,
+.hero > *,
+form {
+  animation: entrada var(--duration-medium) var(--ease-out) both;
+}
+.topbar { animation-delay: 0ms; }
+.hero .eyebrow { animation-delay: calc(var(--duration-stagger) * 2); }
+.hero h1 { animation-delay: calc(var(--duration-stagger) * 3); }
+.hero .lede { animation-delay: calc(var(--duration-stagger) * 4); }
+form { animation-delay: calc(var(--duration-stagger) * 6); }
 
 .topbar {
   position: relative;
@@ -143,7 +176,11 @@ form { position: relative; z-index: 1; display: flex; flex-direction: column; ga
   border-top: 1px solid var(--color-border);
   vertical-align: top;
 }
+.pilares-table tbody tr {
+  transition: background-color var(--duration-quick) var(--ease-out);
+}
 .pilares-table tbody tr:nth-child(even) { background: var(--color-field-bg); }
+.pilares-table tbody tr:hover { background: var(--color-field-bg); }
 
 .pilares-table tbody td:first-child {
   font-weight: 700;
@@ -157,6 +194,8 @@ form { position: relative; z-index: 1; display: flex; flex-direction: column; ga
 
 input[type="text"],
 input[type="number"],
+input[type="email"],
+input[type="tel"],
 select,
 textarea {
   width: 100%;
@@ -167,11 +206,17 @@ textarea {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 12px 14px;
+  transition: border-color var(--duration-quick) var(--ease-out),
+              box-shadow var(--duration-quick) var(--ease-out);
 }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(118, 184, 42, 0.25);
+}
+input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 textarea {
@@ -246,14 +291,29 @@ button.submit {
   border-radius: 12px;
   cursor: pointer;
   margin-top: 4px;
+  transition: transform var(--duration-quick) var(--ease-out),
+              box-shadow var(--duration-quick) var(--ease-out),
+              opacity var(--duration-quick) var(--ease-out);
 }
-button.submit:active { transform: scale(0.99); }
+button.submit:hover:not([disabled]) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(50, 117, 49, 0.28);
+}
+button.submit:active { transform: scale(0.99); transition-duration: var(--duration-micro); }
+button.submit:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .status {
   font-size: 13px;
   text-align: center;
   margin-top: 10px;
   min-height: 18px;
+}
+
+.status-grande {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 24px;
 }
 
 button.submit[disabled] {
@@ -282,9 +342,27 @@ button.submit[disabled] {
   background: var(--color-bg);
   color: var(--color-ink);
   box-shadow: 0 24px 60px rgba(22, 36, 26, 0.28);
+  opacity: 0;
+  transform: scale(var(--scale-large)) translateY(var(--distance-micro));
+  transition: opacity var(--duration-fast) var(--ease-smooth-out),
+              transform var(--duration-fast) var(--ease-smooth-out);
+}
+#modal.is-open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+#modal.is-closing {
+  opacity: 0;
+  transform: scale(var(--scale-large)) translateY(var(--distance-micro));
+  transition-duration: var(--duration-quick);
 }
 #modal::backdrop {
   background: rgba(22, 36, 26, 0.55);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-smooth-out);
+}
+#modal.is-open::backdrop {
+  opacity: 1;
 }
 #modal h2 {
   font-family: Georgia, Cambria, "Times New Roman", serif;
@@ -323,7 +401,9 @@ button.submit[disabled] {
 .gauge-fill {
   background: linear-gradient(to top, var(--color-primary), var(--color-accent));
   clip-path: inset(100% 0 0 0);
-  transition: clip-path 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Secuencia de revelado deliberada, más larga que el presupuesto normal de
+     micro-interacciones — excepción documentada en el skill frontend-animation. */
+  transition: clip-path 1.5s var(--ease-smooth-out);
 }
 
 .modal-cargando {
@@ -406,7 +486,11 @@ button.submit[disabled] {
   height: 100%;
   border-radius: 4px;
   background: var(--color-accent);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform var(--duration-slow) var(--ease-out);
 }
+.c-barra i.is-filled { transform: scaleX(1); }
 .sugerencias { list-style: none; margin: 0; padding: 0; }
 .sugerencias li {
   padding: 8px 0;
@@ -447,6 +531,12 @@ button.submit[disabled] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
   .gauge-fill { transition: none; }
   .pulso .gauge-base { animation: none; opacity: 0.6; }
 }

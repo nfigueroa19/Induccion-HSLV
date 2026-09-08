@@ -3,82 +3,81 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Panel de jefes de servicio — ADN Susana</title>
+<title>Registro de asistencia — HSLV</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
-<link rel="stylesheet" href="css/panel.css" />
+<link rel="stylesheet" href="css/style.css?v=20260907b" />
 </head>
 <body>
-<div class="panel">
+<div class="page">
 
-  <header class="topbar">
+  <img class="watermark" src="Assets/Logo/hslv-mark.png" alt="" aria-hidden="true" />
+
+  <div class="topbar">
     <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
     <div class="wordmark">
       <div class="name">Hospital Susana López de Valencia E.S.E.</div>
-      <div class="sub">Panel de jefes de servicio — asistencia y diagnóstico ADN Susana</div>
+      <div class="sub">Registro de asistencia</div>
     </div>
-    <button id="cerrar-sesion" type="button" class="btn-peligro">Cerrar sesión</button>
-  </header>
+  </div>
 
   <main>
-    <section class="tarjeta">
-      <div class="resumen-general" id="resumen-general">
-        <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-total">—</span>
-          <span class="resumen-etiqueta">personas registradas</span>
-        </div>
-        <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-listos">—</span>
-          <span class="resumen-etiqueta">diagnósticos listos</span>
-        </div>
-        <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-promedio">—</span>
-          <span class="resumen-etiqueta">promedio general</span>
-        </div>
+    <div class="hero">
+      <p class="eyebrow">Registro de asistencia</p>
+      <h1>¡Hola!</h1>
+      <p class="lede">Ingresa tu número de cédula para registrar tu asistencia.</p>
+    </div>
+
+    <form id="form-asistencia" autocomplete="off">
+      <div class="field" id="grupo-cedula">
+        <label for="cedula">Número de cédula</label>
+        <input type="number" id="cedula" name="cedula" inputmode="numeric" autocomplete="new-password" required />
+        <p class="hint">Sin puntos ni espacios.</p>
       </div>
 
-      <div class="filtros">
-        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre o cédula…" />
-        <select id="filtro-area"><option value="">Todas las áreas</option></select>
-        <select id="filtro-estado">
-          <option value="">Todos los estados</option>
-          <option value="listo">Listo</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="procesando">Procesando</option>
-          <option value="fallido">Fallido</option>
-        </select>
-        <select id="filtro-pct">
-          <option value="">% global: todos</option>
-          <option value="desc">Mayor a menor</option>
-          <option value="asc">Menor a mayor</option>
-          <option value="alto">≥ 80%</option>
-          <option value="medio">50% – 79%</option>
-          <option value="bajo">&lt; 50%</option>
-          <option value="sin">Sin diagnóstico</option>
-        </select>
+      <button class="submit" type="submit" id="btn-cedula">Continuar</button>
+      <p class="status" id="status" role="status"></p>
+    </form>
+
+    <!-- Solo aparece si la cédula no está en el roster `personal`. -->
+    <form id="form-contacto" autocomplete="off" hidden>
+      <div class="field">
+        <label for="nombre">Nombre(s) y Apellidos</label>
+        <input type="text" id="nombre" name="nombre" autocomplete="new-password" required />
       </div>
 
-      <div class="tabla-wrap">
-        <table id="tabla-respuestas">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Cédula</th>
-              <th>Área</th>
-              <th>Estado</th>
-              <th>% global</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="cuerpo-tabla"></tbody>
-        </table>
-        <p id="vacio-tabla" class="vacio" hidden>No hay resultados con estos filtros.</p>
-        <p id="cargando-tabla" class="vacio">Cargando…</p>
+      <div class="field">
+        <label for="correo">Correo electrónico</label>
+        <input type="email" id="correo" name="correo" autocomplete="new-password" required />
       </div>
-    </section>
+
+      <div class="field">
+        <label for="telefono">Teléfono</label>
+        <input type="tel" id="telefono" name="telefono" inputmode="numeric" autocomplete="new-password" required />
+      </div>
+
+      <div class="field">
+        <label for="area">Área</label>
+        <select id="area" name="area" autocomplete="off" required>
+          <option value="" disabled selected>Selecciona tu área</option>
+        </select>
+        <input type="text" id="area-otra" name="area-otra" placeholder="Escribe tu área" autocomplete="off" hidden />
+      </div>
+
+      <div class="field">
+        <label for="servicio">Servicio</label>
+        <select id="servicio" name="servicio" autocomplete="off" required disabled>
+          <option value="" disabled selected>Primero selecciona tu área</option>
+        </select>
+        <input type="text" id="servicio-otra" name="servicio-otra" placeholder="Escribe tu servicio" autocomplete="off" hidden />
+      </div>
+
+      <button class="submit" type="submit">Continuar</button>
+      <p class="status" id="status-contacto" role="status"></p>
+    </form>
   </main>
 
 </div>
 
-<script src="js/asistencia.js"></script>
+<script src="js/asistencia.js?v=20260907c"></script>
 </body>
 </html>

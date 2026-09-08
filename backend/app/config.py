@@ -22,6 +22,19 @@ class Config(BaseSettings):
     jwt_secret: str = ""      # firma los tokens de sesión del login; vacío = endpoints deshabilitados
     admin_sesion_min: int = 15  # vida del token; el frontend además cierra sesión por inactividad
 
+    # --- Correo (Resend) -----------------------------------------------------
+    # Vacío = envío deshabilitado (no revienta, solo no manda nada).
+    resend_api_key: str = ""
+    # Antes de verificar el dominio en Resend, solo puede ser
+    # "onboarding@resend.dev" (y solo llega a la cuenta dueña de la API key).
+    resend_from: str = "Unidad de Inteligencia Artificial HSLV <onboarding@resend.dev>"
+    # Base pública de esta misma API — el correo referencia
+    # {api_base_url}/v1/gauge/{porcentaje} como <img src>. Tiene que ser una
+    # URL real y alcanzable desde internet: Gmail (web y app) bloquea
+    # imágenes data:base64 incrustadas, así que el logo-medidor no puede ir
+    # embebido en el HTML, tiene que sevirse desde una URL aparte.
+    api_base_url: str = "https://induccion-hslv-api.onrender.com"
+
     # --- Worker ------------------------------------------------------------
     worker_embebido: bool = False
     # Antes en 8/4: con NIM tardando 20-55s por llamada, un lote tan chico

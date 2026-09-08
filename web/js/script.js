@@ -9,11 +9,36 @@ const MIN_CARACTERES = 200;
 const ESPERA_MS = 2500;      // cada cuánto se pregunta por el diagnóstico
 const INTENTOS_MAX = 40;     // ~100 s antes de rendirse
 
+const pasoCedula = document.getElementById('paso-cedula');
+const pasoFormulario = document.getElementById('paso-formulario');
+const formCedula = document.getElementById('form-cedula');
+const inputCedula = document.getElementById('cedula');
+const statusCedula = document.getElementById('status-cedula');
+const btnCedula = document.getElementById('btn-cedula');
+
+const formContacto = document.getElementById('form-contacto');
+const selectAreaContacto = document.getElementById('area-contacto');
+const selectServicio = document.getElementById('servicio');
+const inputAreaOtra = document.getElementById('area-contacto-otra');
+const inputServicioOtra = document.getElementById('servicio-otra');
+const inputTelefono = document.getElementById('telefono');
+const statusContacto = document.getElementById('status-contacto');
+
 const textarea = document.getElementById('pregunta');
 const contador = document.getElementById('contador');
 const form = document.getElementById('form-adn');
 const status = document.getElementById('status');
 const boton = form.querySelector('button.submit');
+
+// Datos confirmados en el paso 1, para viajar junto con la respuesta al
+// enviar el paso 2. Si la cédula está en `personal`, nombre/área salen del
+// lookup; si no, salen del formulario de contacto.
+let cedulaConfirmada = '';
+let nombreConfirmado = '';
+let areaConfirmada = '';
+let correoConfirmado = '';
+let servicioConfirmado = '';
+let telefonoConfirmado = '';
 
 const modal = document.getElementById('modal');
 const paneCargando = document.getElementById('pane-cargando');
@@ -32,7 +57,179 @@ textarea.addEventListener('input', () => {
   contador.textContent = textarea.value.length;
 });
 
-document.getElementById('cerrar-modal').addEventListener('click', () => modal.close());
+// ---------------------------------------------------------------------------
+// Paso 1: identificación por cédula — prueba de integración con `personal`.
+// Deliberadamente no guarda nada nuevo todavía ni avanza a #paso-formulario:
+// solo confirma en pantalla si el lookup funciona.
+// ---------------------------------------------------------------------------
+
+let catalogo = {};
+
+// Catálogo derivado de `personal` (ver /v1/areas): primera versión sobre
+// datos sin del todo curados. "Otra..." deja escribir libre lo que no
+// calce, para poder corregir el catálogo con datos reales más adelante.
+const OTRA = '__otra__';
+
+function agregarOpcionOtra(select) {
+  const opt = document.createElement('option');
+  opt.value = OTRA;
+  opt.textContent = 'Otra...';
+  select.appendChild(opt);
+}
+
+async function cargarAreasContacto() {
+  try {
+    const r = await fetch(`${API}/v1/areas`);
+    if (!r.ok) return;
+    ({ catalogo } = await r.json());
+
+    for (const [area, servicios] of Object.entries(catalogo)) {
+      if (servicios.length === 0) continue;
+      const opt = document.createElement('option');
+      opt.value = area;
+      opt.textContent = area;
+      selectAreaContacto.appendChild(opt);
+    }
+    agregarOpcionOtra(selectAreaContacto);
+  } catch {
+    // Sin conexión: el formulario de contacto queda sin opciones de
+    // área/servicio, no bloquea el resto de la prueba.
+  }
+}
+cargarAreasContacto();
+
+selectAreaContacto.addEventListener('change', () => {
+  if (selectAreaContacto.value === OTRA) {
+    inputAreaOtra.hidden = false;
+    inputAreaOtra.required = true;
+    inputAreaOtra.focus();
+
+    // Sin área real no hay catálogo de servicios que ofrecer: se pasa
+    // directo a texto libre también para servicio.
+    selectServicio.hidden = true;
+    selectServicio.required = false;
+    selectServicio.disabled = true;
+    inputServicioOtra.hidden = false;
+    inputServicioOtra.required = true;
+    return;
+  }
+
+  inputAreaOtra.hidden = true;
+  inputAreaOtra.required = false;
+  inputAreaOtra.value = '';
+  selectServicio.hidden = false;
+  selectServicio.required = true;
+
+  selectServicio.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Selecciona tu servicio';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  selectServicio.appendChild(placeholder);
+
+  for (const servicio of catalogo[selectAreaContacto.value] || []) {
+    const opt = document.createElement('option');
+    opt.value = servicio;
+    opt.textContent = servicio;
+    selectServicio.appendChild(opt);
+  }
+  agregarOpcionOtra(selectServicio);
+  selectServicio.disabled = false;
+});
+
+selectServicio.addEventListener('change', () => {
+  const esOtra = selectServicio.value === OTRA;
+  inputServicioOtra.hidden = !esOtra;
+  inputServicioOtra.required = esOtra;
+  if (esOtra) {
+    inputServicioOtra.focus();
+  } else {
+    inputServicioOtra.value = '';
+  }
+});
+
+inputTelefono.addEventListener('input', () => {
+  inputTelefono.value = inputTelefono.value.replace(/\D/g, '');
+});
+
+formCedula.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const valor = inputCedula.value.trim();
+  if (!valor) return;
+
+  cedulaConfirmada = valor;
+  formContacto.hidden = true;
+  statusContacto.textContent = '';
+  statusCedula.textContent = 'Verificando...';
+
+  try {
+    const r = await fetch(`${API}/v1/personal/${encodeURIComponent(valor)}`);
+    if (!r.ok) {
+      statusCedula.textContent = 'No pudimos verificar tu cédula. Intenta de nuevo en un momento.';
+      return;
+    }
+    const data = await r.json();
+    statusCedula.textContent = '';
+
+    if (data.existe) {
+      nombreConfirmado = data.nombre || '';
+      areaConfirmada = data.area || '';
+      mostrarPasoFormulario();
+      return;
+    }
+
+    inputCedula.disabled = true;
+    btnCedula.hidden = true;
+    statusCedula.textContent = 'Por favor, completa tus datos para continuar.';
+    formContacto.hidden = false;
+    document.getElementById('nombre').focus();
+  } catch {
+    statusCedula.textContent = 'Sin conexión con el servidor. Revisa tu red e intenta de nuevo.';
+  }
+});
+
+function mostrarPasoFormulario() {
+  pasoCedula.hidden = true;
+  pasoFormulario.hidden = false;
+}
+
+formContacto.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  nombreConfirmado = document.getElementById('nombre').value.trim();
+  correoConfirmado = document.getElementById('correo').value.trim();
+
+  const areaEsTexto = selectAreaContacto.value === OTRA;
+  areaConfirmada = areaEsTexto ? inputAreaOtra.value.trim() : selectAreaContacto.value;
+  // Área "Otra..." deja sin catálogo al servicio (se oculta el <select> y
+  // se pasa directo a texto libre), así que ahí también se usa el texto.
+  const servicioEsTexto = areaEsTexto || selectServicio.value === OTRA;
+  servicioConfirmado = servicioEsTexto ? inputServicioOtra.value.trim() : selectServicio.value;
+  telefonoConfirmado = inputTelefono.value.trim();
+
+  mostrarPasoFormulario();
+});
+
+function cerrarModalAnimado() {
+  if (sinMovimiento) {
+    modal.close();
+    return;
+  }
+  const cierreMs = parseFloat(getComputedStyle(modal).getPropertyValue('--duration-quick')) || 150;
+  modal.classList.remove('is-open');
+  modal.classList.add('is-closing');
+  setTimeout(() => {
+    modal.classList.remove('is-closing');
+    modal.close();
+  }, cierreMs);
+}
+
+document.getElementById('cerrar-modal').addEventListener('click', cerrarModalAnimado);
+modal.addEventListener('cancel', (e) => {
+  e.preventDefault();
+  cerrarModalAnimado();
+});
 
 // ---------------------------------------------------------------------------
 // Envío
@@ -58,9 +255,12 @@ form.addEventListener('submit', async (e) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nombre: form.nombre.value.trim(),
-        cedula: form.cedula.value.trim(),
-        area: form.area.value,
+        nombre: nombreConfirmado,
+        cedula: cedulaConfirmada,
+        area: areaConfirmada,
+        servicio: servicioConfirmado || null,
+        telefono: telefonoConfirmado || null,
+        correo: correoConfirmado || null,
         texto: texto,
       }),
     });
@@ -107,7 +307,13 @@ function abrirModal() {
   paneError.hidden = true;
   paneCargando.hidden = false;
   estadoEspera.textContent = '';
+  modal.classList.remove('is-closing');
   modal.showModal();
+  if (sinMovimiento) {
+    modal.classList.add('is-open');
+  } else {
+    requestAnimationFrame(() => modal.classList.add('is-open'));
+  }
 }
 
 function mostrarPane(pane) {
@@ -222,15 +428,18 @@ function pintarResultado(d) {
   // El logo se llena de abajo hacia arriba hasta el porcentaje obtenido.
   const relleno = document.getElementById('gauge-fill');
   const cifra = document.getElementById('pct');
+  const barras = lista.querySelectorAll('.c-barra i');
 
   if (sinMovimiento) {
     relleno.style.clipPath = `inset(${100 - d.porcentaje}% 0 0 0)`;
     cifra.textContent = d.porcentaje;
+    barras.forEach((b) => b.classList.add('is-filled'));
     return;
   }
 
   requestAnimationFrame(() => {
     relleno.style.clipPath = `inset(${100 - d.porcentaje}% 0 0 0)`;
+    barras.forEach((b) => b.classList.add('is-filled'));
   });
   animarCifra(cifra, d.porcentaje, 1500);
 }
@@ -250,6 +459,22 @@ function animarCifra(nodo, destino, duracion) {
 // restaura desde la caché de retroceso (bfcache) del historial.
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {
+    formCedula.reset();
+    statusCedula.textContent = '';
+    cedulaConfirmada = '';
+    nombreConfirmado = '';
+    areaConfirmada = '';
+    correoConfirmado = '';
+    servicioConfirmado = '';
+    telefonoConfirmado = '';
+    inputCedula.disabled = false;
+    btnCedula.hidden = false;
+    pasoFormulario.hidden = true;
+    pasoCedula.hidden = false;
+    formContacto.reset();
+    formContacto.hidden = true;
+    statusContacto.textContent = '';
+
     form.reset();
     contador.textContent = '0';
     textarea.disabled = false;

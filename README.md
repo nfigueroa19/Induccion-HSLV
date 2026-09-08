@@ -1,6 +1,6 @@
-# Re-inducción HSLV
+# Inducción HSLV
 
-Aplicativo de re-inducción anual del Hospital Universitario Susana López de
+Aplicativo de inducción anual del Hospital Universitario Susana López de
 Valencia E.S.E. (~1500 colaboradores).
 
 El colaborador responde una pregunta abierta sobre cómo vive la cultura

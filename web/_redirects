@@ -1,6 +1,9 @@
 # Rewrites para Render Static Site (mismo formato que Netlify).
 # 200 = rewrite: sirve el archivo destino manteniendo la URL visible limpia,
 # no es un redirect visible para quien navega.
-/dashboard    /dashboard.html    200
-/login        /login.html        200
-/asistencia   /asistencia.html   200
+/dashboard         /dashboard.html         200
+/login             /login.html             200
+# Panel de jefes de servicio (antes vivía en /asistencia; se liberó ese
+# nombre para el registro de asistencia de colaboradores, ver más abajo).
+/gestion-interna   /gestion-interna.html   200
+/asistencia        /asistencia.html        200

@@ -1,191 +1,240 @@
-// Sin token no hay nada que hacer en esta página: se corta antes de tocar
-// el DOM o pedir datos, para no dejar la tabla vacía parpadeando ni gastar
-// una llamada al backend que de todos modos va a devolver 401.
-if (!sessionStorage.getItem('admin_token')) {
-  location.replace('/login');
-  throw new Error('sin sesión');
-}
+// Página de registro de asistencia — lookup contra la tabla `personal`
+// (roster de RR.HH.) y guardado en `asistencia`.
+//   1. Cédula existe en `personal`     -> se guarda con esos datos, mensaje
+//      de bienvenida.
+//   2. Cédula NO existe en `personal`  -> formulario corto de contacto; al
+//      enviarlo se guarda en `asistencia` y además completa `personal`
+//      (origen='autorregistro') con lo esencial.
 
+// El host físico (PC o Raspberry Pi) puede recibir una IP LAN distinta
+// cada vez (DHCP del TP-Link) — se detecta por forma, no se fija una IP.
+const esIPLocal = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(location.hostname);
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8000'
+  : esIPLocal
+  ? `http://${location.hostname}:8000`
   : 'https://induccion-hslv-api.onrender.com';
 
-const SESION_INACTIVIDAD_MS = 15 * 60 * 1000;
+const hero = document.querySelector('.hero');
+const formCedula = document.getElementById('form-asistencia');
+const inputCedula = document.getElementById('cedula');
+const status = document.getElementById('status');
+const btnCedula = document.getElementById('btn-cedula');
 
-const cuerpoTabla = document.getElementById('cuerpo-tabla');
-const vacioTabla = document.getElementById('vacio-tabla');
-const cargandoTabla = document.getElementById('cargando-tabla');
-const resumenTotal = document.getElementById('resumen-total');
-const resumenListos = document.getElementById('resumen-listos');
-const resumenPromedio = document.getElementById('resumen-promedio');
-const filtroBusqueda = document.getElementById('filtro-busqueda');
-const filtroArea = document.getElementById('filtro-area');
-const filtroEstado = document.getElementById('filtro-estado');
-const filtroPct = document.getElementById('filtro-pct');
+const formContacto = document.getElementById('form-contacto');
+const selectArea = document.getElementById('area');
+const selectServicio = document.getElementById('servicio');
+const inputAreaOtra = document.getElementById('area-otra');
+const inputServicioOtra = document.getElementById('servicio-otra');
+const inputTelefono = document.getElementById('telefono');
+const statusContacto = document.getElementById('status-contacto');
 
-let datos = [];
-let filaAbierta = null;
+inputTelefono.addEventListener('input', () => {
+  inputTelefono.value = inputTelefono.value.replace(/\D/g, '');
+});
 
-// Sesión deslizante: cualquier interacción real reinicia el reloj de
-// inactividad. Revisa cada 30s en vez de un solo setTimeout porque el
-// usuario puede dejar la pestaña abierta sin recargar por horas.
-['mousemove', 'keydown', 'click', 'scroll'].forEach((evento) =>
-  window.addEventListener(evento, marcarActividad, { passive: true }));
+fetch(`${API}/healthz`).catch(() => {});
 
-function marcarActividad() {
-  sessionStorage.setItem('admin_actividad', String(Date.now()));
-}
-marcarActividad();
+let catalogo = {};
 
-setInterval(() => {
-  const ultima = Number(sessionStorage.getItem('admin_actividad') || 0);
-  if (Date.now() - ultima > SESION_INACTIVIDAD_MS) cerrarSesion();
-}, 30000);
+// Catálogo derivado de `personal` (ver /v1/areas): primera versión sobre
+// datos sin del todo curados. "Otra..." deja escribir libre lo que no
+// calce, para poder corregir el catálogo con datos reales más adelante.
+const OTRA = '__otra__';
 
-document.getElementById('cerrar-sesion').addEventListener('click', cerrarSesion);
-
-function cerrarSesion() {
-  sessionStorage.removeItem('admin_token');
-  sessionStorage.removeItem('admin_actividad');
-  location.replace('/login');
+function agregarOpcionOtra(select) {
+  const opt = document.createElement('option');
+  opt.value = OTRA;
+  opt.textContent = 'Otra...';
+  select.appendChild(opt);
 }
 
-async function cargar() {
-  const token = sessionStorage.getItem('admin_token');
+async function cargarAreas() {
   try {
-    const r = await fetch(`${API}/v1/admin/respuestas`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (r.status === 401) return cerrarSesion();
-    if (!r.ok) throw new Error();
+    const r = await fetch(`${API}/v1/areas`);
+    if (!r.ok) return;
+    ({ catalogo } = await r.json());
 
-    const nuevoToken = r.headers.get('X-Session-Token');
-    if (nuevoToken) sessionStorage.setItem('admin_token', nuevoToken);
-
-    const json = await r.json();
-    datos = json.respuestas;
-    poblarFiltroArea();
-    dibujar();
-  } catch {
-    cargandoTabla.textContent = 'No se pudo cargar la información. Intenta recargar la página.';
-    cargandoTabla.hidden = false;
-  }
-}
-cargar();
-
-function poblarFiltroArea() {
-  if (filtroArea.dataset.poblado) return;
-  const areas = [...new Set(datos.map((d) => d.area))].sort();
-  areas.forEach((a) => {
-    const op = document.createElement('option');
-    op.value = a;
-    op.textContent = a;
-    filtroArea.appendChild(op);
-  });
-  filtroArea.dataset.poblado = '1';
-}
-
-[filtroBusqueda, filtroArea, filtroEstado, filtroPct].forEach((el) =>
-  el.addEventListener('input', dibujar));
-
-function filtrar() {
-  const q = filtroBusqueda.value.trim().toLowerCase();
-  const pct = filtroPct.value;
-
-  const filas = datos.filter((d) => {
-    if (filtroArea.value && d.area !== filtroArea.value) return false;
-    if (filtroEstado.value && d.estado !== filtroEstado.value) return false;
-    if (q && !`${d.nombre} ${d.cedula}`.toLowerCase().includes(q)) return false;
-    if (pct === 'alto' && !(d.porcentaje != null && d.porcentaje >= 80)) return false;
-    if (pct === 'medio' && !(d.porcentaje != null && d.porcentaje >= 50 && d.porcentaje < 80)) return false;
-    if (pct === 'bajo' && !(d.porcentaje != null && d.porcentaje < 50)) return false;
-    if (pct === 'sin' && d.porcentaje != null) return false;
-    return true;
-  });
-
-  if (pct === 'desc' || pct === 'asc') {
-    const signo = pct === 'desc' ? -1 : 1;
-    filas.sort((a, b) => {
-      if (a.porcentaje == null && b.porcentaje == null) return 0;
-      if (a.porcentaje == null) return 1;
-      if (b.porcentaje == null) return -1;
-      return signo * (a.porcentaje - b.porcentaje);
-    });
-  }
-
-  return filas;
-}
-
-function dibujar() {
-  cargandoTabla.hidden = true;
-  const filas = filtrar();
-
-  resumenTotal.textContent = datos.length || '—';
-  const listos = datos.filter((d) => d.porcentaje != null);
-  resumenListos.textContent = listos.length || '—';
-  resumenPromedio.textContent = listos.length
-    ? `${Math.round(listos.reduce((acc, d) => acc + d.porcentaje, 0) / listos.length)}%`
-    : '—';
-
-  cuerpoTabla.innerHTML = '';
-  vacioTabla.hidden = filas.length > 0;
-  filaAbierta = null;
-
-  filas.forEach((d) => {
-    const tr = document.createElement('tr');
-    tr.className = 'fila-persona';
-    tr.innerHTML = `
-      <td>${escapar(d.nombre)}</td>
-      <td>${escapar(d.cedula)}</td>
-      <td>${escapar(d.area)}</td>
-      <td><span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span></td>
-      <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
-      <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>
-    `;
-    if (d.componentes.length) {
-      tr.classList.add('con-detalle');
-      tr.addEventListener('click', () => alternarDetalle(tr, d));
+    for (const [area, servicios] of Object.entries(catalogo)) {
+      if (servicios.length === 0) continue;
+      const opt = document.createElement('option');
+      opt.value = area;
+      opt.textContent = area;
+      selectArea.appendChild(opt);
     }
-    cuerpoTabla.appendChild(tr);
+    agregarOpcionOtra(selectArea);
+  } catch {
+    // Sin conexión: el formulario de contacto solo queda sin opciones de
+    // área/servicio, no bloquea el resto de la prueba.
+  }
+}
+cargarAreas();
+
+selectArea.addEventListener('change', () => {
+  if (selectArea.value === OTRA) {
+    inputAreaOtra.hidden = false;
+    inputAreaOtra.required = true;
+    inputAreaOtra.focus();
+
+    // Sin área real no hay catálogo de servicios que ofrecer: se pasa
+    // directo a texto libre también para servicio.
+    selectServicio.hidden = true;
+    selectServicio.required = false;
+    selectServicio.disabled = true;
+    inputServicioOtra.hidden = false;
+    inputServicioOtra.required = true;
+    return;
+  }
+
+  inputAreaOtra.hidden = true;
+  inputAreaOtra.required = false;
+  inputAreaOtra.value = '';
+  selectServicio.hidden = false;
+  selectServicio.required = true;
+
+  selectServicio.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Selecciona tu servicio';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  selectServicio.appendChild(placeholder);
+
+  for (const servicio of catalogo[selectArea.value] || []) {
+    const opt = document.createElement('option');
+    opt.value = servicio;
+    opt.textContent = servicio;
+    selectServicio.appendChild(opt);
+  }
+  agregarOpcionOtra(selectServicio);
+  selectServicio.disabled = false;
+});
+
+selectServicio.addEventListener('change', () => {
+  const esOtra = selectServicio.value === OTRA;
+  inputServicioOtra.hidden = !esOtra;
+  inputServicioOtra.required = esOtra;
+  if (esOtra) {
+    inputServicioOtra.focus();
+  } else {
+    inputServicioOtra.value = '';
+  }
+});
+
+// Barrera rápida en el mismo navegador: no evita incógnito/otro navegador
+// (para eso está el bloqueo por MAC en el backend), pero corta el reintento
+// casual sin ni siquiera llamar a la API.
+const CLAVE_LOCAL = 'hslv_asistencia_registrada';
+
+if (localStorage.getItem(CLAVE_LOCAL)) {
+  // OJO: #status vive DENTRO de #form-asistencia en el HTML — nunca ocultar
+  // formCedula completo aquí, o el mensaje que se pone en status desaparece
+  // con él (esto causaba la pantalla en blanco al recargar).
+  document.getElementById('grupo-cedula').hidden = true;
+  btnCedula.hidden = true;
+  status.textContent = 'Ya registraste tu asistencia desde este navegador. ¡Gracias!';
+  status.classList.add('status-grande');
+  hero.hidden = true;
+}
+
+async function guardarAsistencia(datos) {
+  const r = await fetch(`${API}/v1/asistencia`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos),
   });
+  if (r.status === 409) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail || 'Este dispositivo ya registró otra cédula.');
+  }
+  if (!r.ok) {
+    throw new Error('No pudimos guardar tu asistencia. Intenta de nuevo.');
+  }
+  const data = await r.json();
+  // Dispositivos de staff (autorizados por MAC en el backend) no se marcan
+  // localmente: necesitan poder registrar a varias personas seguidas desde
+  // el mismo celular sin que el propio navegador les muestre el candado.
+  if (!data.staff) {
+    localStorage.setItem(CLAVE_LOCAL, '1');
+  }
 }
 
-function alternarDetalle(tr, d) {
-  const siguiente = tr.nextElementSibling;
-  const yaAbierta = siguiente && siguiente.classList.contains('fila-detalle');
+formCedula.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const valor = inputCedula.value.trim();
+  if (!valor) return;
 
-  cuerpoTabla.querySelectorAll('.fila-detalle').forEach((el) => el.remove());
-  cuerpoTabla.querySelectorAll('.fila-persona').forEach((el) => el.classList.remove('activa'));
+  formContacto.hidden = true;
+  statusContacto.textContent = '';
+  status.textContent = 'Verificando...';
 
-  if (yaAbierta) return;
+  try {
+    const r = await fetch(`${API}/v1/personal/${encodeURIComponent(valor)}`);
+    if (!r.ok) {
+      status.textContent = 'No pudimos verificar tu cédula. Intenta de nuevo en un momento.';
+      return;
+    }
+    const data = await r.json();
 
-  tr.classList.add('activa');
-  const detalle = document.createElement('tr');
-  detalle.className = 'fila-detalle';
-  detalle.innerHTML = `
-    <td colspan="6">
-      <div class="componentes-grid">
-        ${d.componentes.map((c) => `
-          <div class="componente-item">
-            <span class="componente-nombre">${escapar(c.nombre || c.id)}</span>
-            <span class="componente-nivel">${c.nivel ?? '—'}/4</span>
-          </div>
-        `).join('')}
-      </div>
-    </td>
-  `;
-  tr.after(detalle);
-}
+    if (data.existe) {
+      try {
+        await guardarAsistencia({ cedula: valor, encontrado: true, nombre: data.nombre, area: data.area });
+        document.getElementById('grupo-cedula').hidden = true;
+        btnCedula.hidden = true;
+        hero.hidden = true;
+        status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
+        status.classList.add('status-grande');
+      } catch (err) {
+        document.getElementById('grupo-cedula').hidden = true;
+        btnCedula.hidden = true;
+        hero.hidden = true;
+        status.textContent = err.message;
+        status.classList.add('status-grande');
+      }
+      return;
+    }
 
-function etiquetaEstado(estado) {
-  return {
-    pendiente: 'Pendiente', procesando: 'Procesando', listo: 'Listo',
-    fallido: 'Fallido', descartado: 'Descartado',
-  }[estado] || estado;
-}
+    inputCedula.disabled = true;
+    btnCedula.hidden = true;
+    status.textContent = 'Por favor, completa tus datos para continuar.';
+    formContacto.hidden = false;
+    document.getElementById('nombre').focus();
+  } catch {
+    status.textContent = 'Sin conexión con el servidor. Revisa tu red e intenta de nuevo.';
+  }
+});
 
-function escapar(texto) {
-  const div = document.createElement('div');
-  div.textContent = texto ?? '';
-  return div.innerHTML;
-}
+formContacto.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('nombre').value.trim();
+  const areaEsTexto = selectArea.value === OTRA;
+  const area = areaEsTexto ? inputAreaOtra.value.trim() : selectArea.value;
+  // Área "Otra..." deja sin catálogo al servicio (se oculta el <select> y
+  // se pasa directo a texto libre), así que ahí también se usa el texto.
+  const servicioEsTexto = areaEsTexto || selectServicio.value === OTRA;
+  const servicio = servicioEsTexto ? inputServicioOtra.value.trim() : selectServicio.value;
+  const telefono = inputTelefono.value.trim();
+
+  // Al terminar (éxito o error) se deja la pantalla igual que el flujo de
+  // cédula encontrada: solo el mensaje final en #status, nada de #grupo-cedula
+  // (cédula + hint), #form-contacto ni el hero.
+  function mostrarSoloMensajeFinal() {
+    document.getElementById('grupo-cedula').hidden = true;
+    formContacto.hidden = true;
+    hero.hidden = true;
+  }
+
+  try {
+    await guardarAsistencia({
+      cedula: inputCedula.value.trim(), encontrado: false,
+      nombre, area, servicio, telefono,
+    });
+    mostrarSoloMensajeFinal();
+    status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
+    status.classList.add('status-grande');
+  } catch (err) {
+    mostrarSoloMensajeFinal();
+    status.textContent = err.message;
+    status.classList.add('status-grande');
+  }
+});

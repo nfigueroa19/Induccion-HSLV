@@ -152,12 +152,20 @@ class Router:
                     ultimo = e
                     if codigo == 429:
                         ruta.fallo(espera or 60)          # cuota agotada
-                    elif codigo in (401, 402, 403):
-                        ruta.fallo(3600)                   # llave mala o sin saldo
+                    elif codigo in (401, 402, 403, 410):
+                        # Llave mala/sin saldo, o modelo retirado (410 Gone:
+                        # pasó de moda, ej. NIM 2026-08-26) — no se arregla
+                        # solo, cooldown largo para no desperdiciar intentos.
+                        ruta.fallo(3600)
                     elif codigo >= 500:
                         ruta.fallo(espera)
                     else:
-                        raise      # 4xx nuestro: reintentar solo multiplica el error
+                        # 4xx nuestro (bug de payload/esquema): reintentar la
+                        # MISMA ruta no ayuda, pero abortar completar() entero
+                        # tampoco — antes este `raise` tumbaba el intento
+                        # completo y nunca llegaba a probar las demás rutas
+                        # sanas de la lista. Cooldown corto y se sigue probando.
+                        ruta.fallo(30)
 
                 except (httpx.TimeoutException, httpx.TransportError) as e:
                     ultimo = e

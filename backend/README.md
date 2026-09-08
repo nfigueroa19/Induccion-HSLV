@@ -1,4 +1,4 @@
-# Backend — Re-inducción HSLV
+# Backend — Inducción HSLV
 
 API de recepción + worker de diagnóstico. Se despliega en Render con **root
 directory = `backend`**. El frontend estático vive en `../web/` y se despliega

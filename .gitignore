@@ -20,3 +20,6 @@ Thumbs.db
 
 # Logs de depuración locales
 backend/groq_error*.txt
+
+# Cloudflare Pages: caché/estado local de `wrangler`, no es código fuente
+web/.wrangler/

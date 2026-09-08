@@ -7,7 +7,7 @@ const error = document.getElementById('error-login');
 
 // Ya hay sesión vigente: directo al panel, sin pasar por el formulario.
 if (sessionStorage.getItem('admin_token')) {
-  location.replace('/asistencia');
+  location.replace('/gestion-interna');
 }
 
 form.addEventListener('submit', async (e) => {
@@ -33,7 +33,7 @@ form.addEventListener('submit', async (e) => {
     const { token } = await r.json();
     sessionStorage.setItem('admin_token', token);
     sessionStorage.setItem('admin_actividad', String(Date.now()));
-    location.replace('/asistencia');
+    location.replace('/gestion-interna');
   } catch (err) {
     error.textContent = err.message || 'No se pudo iniciar sesión.';
     error.hidden = false;

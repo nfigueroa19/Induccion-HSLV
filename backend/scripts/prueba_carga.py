@@ -41,13 +41,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import db  # noqa: E402
 from app.config import cfg  # noqa: E402
 
-from app.main import AREAS_ASISTENCIALES  # noqa: E402
+from app.main import AREAS_ADMINISTRATIVAS, AREAS_ASISTENCIALES  # noqa: E402
 
-AREAS_ADMINISTRATIVAS = [
-    "Sistemas de Información", "Talento Humano", "Facturación",
-    "Gestión Documental", "Calidad", "Compras", "Mercadeo",
-    "Servicios Generales", "Mantenimiento", "Subdirección Científica",
-]
 AREAS = sorted(AREAS_ASISTENCIALES) + AREAS_ADMINISTRATIVAS
 
 # Textos reales (>=120 caracteres) separados por perfil y por tono, para que
@@ -61,7 +56,8 @@ TEXTOS_ASISTENCIAL_POSITIVO = [
 
     "Participo en la formación de nuevo personal, transmitiendo no solo "
     "procedimientos técnicos sino también la forma en que aquí se entiende "
-    "el cuidado del paciente. Eso incluye escuchar antes de actuar.",
+    "el cuidado del paciente. Eso incluye escuchar antes de actuar, sin "
+    "apurar a quien recién está aprendiendo.",
 
     "En la UCI cada turno exige coordinación exacta con el equipo. Me esfuerzo "
     "por comunicar cambios de estado a tiempo y por explicarle a la familia "
@@ -79,11 +75,13 @@ TEXTOS_ASISTENCIAL_POSITIVO = [
 TEXTOS_ASISTENCIAL_NEUTRAL = [
     "Cumplo los protocolos de bioseguridad y de registro clínico como están "
     "establecidos. Reporto novedades por los canales indicados y asisto a las "
-    "capacitaciones cuando el turno lo permite.",
+    "capacitaciones cuando el turno lo permite, aunque no siempre alcanza el "
+    "tiempo para todas.",
 
     "Mi función es sobre todo técnica: tomar y procesar muestras dentro de "
     "los tiempos definidos. Aplico la cultura institucional principalmente "
-    "en la puntualidad y el manejo cuidadoso de cada resultado.",
+    "en la puntualidad y el manejo cuidadoso de cada resultado, revisando dos "
+    "veces antes de entregarlo.",
 
     "Sigo el protocolo de admisión y valoración inicial tal como se enseñó en "
     "la inducción. No tengo mucho contacto directo con el paciente fuera de "
@@ -97,7 +95,7 @@ TEXTOS_ASISTENCIAL_CRITICO = [
 
     "Siento que estos discursos de cultura institucional se quedan en el "
     "papel. En el día a día lo que más se nota es la falta de personal, no "
-    "los valores que se repiten en las carteleras.",
+    "los valores que se repiten en las carteleras, por bonitos que suenen.",
 
     "Intento seguir los protocolos, pero muchas veces faltan insumos básicos "
     "y toca improvisar. Eso genera estrés en el equipo y a veces afecta cómo "
@@ -126,21 +124,25 @@ TEXTOS_ADMINISTRATIVO_POSITIVO = [
 TEXTOS_ADMINISTRATIVO_NEUTRAL = [
     "Superviso los procesos administrativos y la documentación del área, "
     "buscando que los tiempos de respuesta sean cortos y confiables. La "
-    "mejora continua es algo que intento aplicar todos los días.",
+    "mejora continua es algo que intento aplicar todos los días, revisando "
+    "qué se puede simplificar.",
 
     "Mi trabajo consiste en mantener actualizados los sistemas de "
     "información del área. Aplico la cultura institucional cumpliendo los "
-    "plazos acordados y documentando los cambios que hago.",
+    "plazos acordados y documentando los cambios que hago, para que quien "
+    "siga el proceso no se pierda.",
 
     "Realizo compras y seguimiento a proveedores según el cronograma "
     "establecido. No tengo contacto directo con pacientes, pero procuro que "
-    "mis tiempos no retrasen a quienes sí lo tienen.",
+    "mis tiempos no retrasen a quienes sí lo tienen, porque de mi gestión "
+    "depende que no falten insumos.",
 ]
 
 TEXTOS_ADMINISTRATIVO_CRITICO = [
     "Entre la cantidad de reportes que hay que entregar y el poco personal "
     "del área, es difícil dedicarle tiempo a pensar en 'cultura'. La verdad "
-    "es que la prioridad diaria es simplemente no atrasarse.",
+    "es que la prioridad diaria es simplemente no atrasarse y que nada se "
+    "quede sin firmar.",
 
     "Creo que estas iniciativas de cultura institucional casi nunca llegan a "
     "las áreas administrativas con la misma fuerza que a las asistenciales. "
@@ -148,7 +150,8 @@ TEXTOS_ADMINISTRATIVO_CRITICO = [
 
     "Hay procesos que dependen de sistemas viejos y lentos, y eso genera "
     "reprocesos constantes. Se pierde tiempo que podría usarse en mejorar la "
-    "atención al usuario interno y externo.",
+    "atención al usuario interno y externo, y eso termina frustrando a todo "
+    "el equipo.",
 ]
 
 # Peso relativo por tono: la mayoría comprometida, una porción neutra/técnica,

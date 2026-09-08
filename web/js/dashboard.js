@@ -15,19 +15,20 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
 const INTERVALO_REFRESCO_MS = 20000;
 const ESPERA_MAXIMA_SIN_STREAM_MS = 12000;
 
-const gridAreas = document.getElementById('grid-areas');
-const vacioAreas = document.getElementById('vacio-areas');
+const gridAreas = document.getElementById('grid-pilares');
+const vacioAreas = document.getElementById('vacio-pilares');
 const seccionDetalle = document.getElementById('seccion-detalle');
 const radarComponentes = document.getElementById('radar-componentes');
-const detalleArea = document.getElementById('detalle-area');
+const detalleArea = document.getElementById('detalle-pilar');
 const cerrarDetalle = document.getElementById('cerrar-detalle');
 const tooltip = document.getElementById('tooltip');
 const resumenRespuestas = document.getElementById('resumen-respuestas');
 const resumenPromedio = document.getElementById('resumen-promedio');
-const resumenAreas = document.getElementById('resumen-areas');
+const resumenProcesos = document.getElementById('resumen-procesos');
 
-let datos = { total_respuestas: 0, areas: [], componentes: [] };
-let areaSeleccionada = null;
+let datos = { total_respuestas: 0, procesos: [], componentes: [] };
+let areaSeleccionada = null; // componente_id del pilar elegido
+let nombrePilarSeleccionado = null;
 
 // Estado del refresco anterior (puesto y cifras por área), para poder mostrar
 // cuánto subió/bajó cada área y detectar respuestas nuevas entre un fetch y
@@ -43,7 +44,7 @@ iniciarActualizacion();
 function aplicarDatos(json) {
   datos = json;
   dibujarAreas();
-  if (areaSeleccionada) dibujarRadar(areaSeleccionada);
+  if (areaSeleccionada) dibujarRadar(areaSeleccionada, nombrePilarSeleccionado);
 }
 
 function cargar() {
@@ -97,6 +98,7 @@ function iniciarActualizacion() {
 
 cerrarDetalle.addEventListener('click', () => {
   areaSeleccionada = null;
+  nombrePilarSeleccionado = null;
   seccionDetalle.hidden = true;
 });
 
@@ -106,17 +108,17 @@ function colorPorPct(pct) {
   return 'var(--ring-bajo)';
 }
 
-function tarjetaKpi(area, puesto) {
-  const pct = Math.max(0, Math.min(100, area.promedio));
-  const previa = ordenAnterior.get(area.area);
+function tarjetaKpi(pilar, puesto) {
+  const pct = Math.max(0, Math.min(100, pilar.promedio));
+  const previa = ordenAnterior.get(pilar.componente_id);
 
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'barra-area';
   if (puesto <= 3) btn.classList.add('barra-podio');
-  btn.dataset.area = area.area;
+  btn.dataset.area = pilar.componente_id;
   btn.dataset.pct = String(pct);
-  btn.setAttribute('aria-pressed', String(area.area === areaSeleccionada));
+  btn.setAttribute('aria-pressed', String(pilar.componente_id === areaSeleccionada));
 
   // El podio (1-3) reemplaza el "#N" de texto por el mismo círculo numerado
   // que ya usa la escala 0-4 del panel de detalle (.escala-num) — no un
@@ -130,10 +132,10 @@ function tarjetaKpi(area, puesto) {
     <span class="barra-puesto">${marcador}${cambio}</span>
     <span class="barra-cuerpo">
       <span class="barra-cabecera">
-        <span class="barra-nombre">${area.area}</span>
+        <span class="barra-nombre">${pilar.componente}</span>
         <span class="barra-cifras">
           <span class="barra-pct" data-valor="${pct}" data-origen="${previa ? previa.promedio : 0}">${previa ? previa.promedio : 0}%</span>
-          <span class="barra-n">${area.n} respuestas</span>
+          <span class="barra-n">${pilar.n} respuestas</span>
         </span>
       </span>
       <span class="barra-pista">
@@ -142,18 +144,49 @@ function tarjetaKpi(area, puesto) {
     </span>
   `;
 
-  if (previa && area.n > previa.n) btn.classList.add('barra-nueva-respuesta');
+  if (previa && pilar.n > previa.n) btn.classList.add('barra-nueva-respuesta');
 
   btn.addEventListener('click', () => {
     ocultarTooltip();
-    mostrarDetalle(area.area);
+    mostrarDetalle(pilar.componente_id, pilar.componente);
   });
   btn.addEventListener('mouseenter', (e) =>
-    mostrarTooltip(e, `${area.area} · ${area.n} respuestas · rango ${area.minimo}%–${area.maximo}%`));
+    mostrarTooltip(e, `${pilar.componente} · ${pilar.n} respuestas · rango ${pilar.minimo}%–${pilar.maximo}%`));
   btn.addEventListener('mousemove', moverTooltip);
   btn.addEventListener('mouseleave', ocultarTooltip);
 
   return btn;
+}
+
+// Agrupa las filas área×componente que manda el backend por componente
+// (pilar), promediando entre áreas. El backend sigue devolviendo el detalle
+// por área — la agregación a pilar vive solo en el frontend.
+function agregarPilares() {
+  const mapa = new Map();
+  datos.componentes.forEach((c) => {
+    const pctFila = Math.round((Number(c.nivel_promedio) / 4) * 100);
+    const prev = mapa.get(c.componente_id) || {
+      componente_id: c.componente_id,
+      componente: c.componente,
+      n: 0,
+      sumaNivel: 0,
+      minimo: pctFila,
+      maximo: pctFila,
+    };
+    prev.n += c.n;
+    prev.sumaNivel += Number(c.nivel_promedio) * c.n;
+    prev.minimo = Math.min(prev.minimo, pctFila);
+    prev.maximo = Math.max(prev.maximo, pctFila);
+    mapa.set(c.componente_id, prev);
+  });
+  return [...mapa.values()].map((p) => ({
+    componente_id: p.componente_id,
+    componente: p.componente,
+    n: p.n,
+    promedio: p.n > 0 ? Math.round((p.sumaNivel / p.n / 4) * 100) : 0,
+    minimo: p.minimo,
+    maximo: p.maximo,
+  }));
 }
 
 // Flecha de cambio de puesto respecto al refresco anterior. `null` en la
@@ -196,13 +229,16 @@ function ocultarTooltip() { tooltip.hidden = true; }
 window.addEventListener('scroll', ocultarTooltip, { passive: true });
 
 function dibujarAreas() {
-  const filas = [...datos.areas].sort((a, b) => b.promedio - a.promedio);
-
+  // Los indicadores generales (respuestas, promedio, procesos) se calculan
+  // siempre sobre los procesos que manda el backend, sin importar que las
+  // tarjetas ahora agrupen por pilar en vez de por proceso.
   resumenRespuestas.textContent = datos.total_respuestas ?? '—';
-  resumenAreas.textContent = filas.length || '—';
-  const sumaPonderada = filas.reduce((acc, a) => acc + a.promedio * a.n, 0);
-  const totalN = filas.reduce((acc, a) => acc + a.n, 0);
-  resumenPromedio.textContent = totalN > 0 ? `${Math.round(sumaPonderada / totalN)}%` : '—';
+  resumenProcesos.textContent = datos.procesos.length || '—';
+  const sumaPonderadaProcesos = datos.procesos.reduce((acc, a) => acc + a.promedio * a.n, 0);
+  const totalNProcesos = datos.procesos.reduce((acc, a) => acc + a.n, 0);
+  resumenPromedio.textContent = totalNProcesos > 0 ? `${Math.round(sumaPonderadaProcesos / totalNProcesos)}%` : '—';
+
+  const filas = agregarPilares().sort((a, b) => b.promedio - a.promedio);
 
   if (filas.length === 0) {
     gridAreas.innerHTML = '';
@@ -254,29 +290,30 @@ function dibujarAreas() {
     }
   });
 
-  ordenAnterior = new Map(filas.map((a, i) => [a.area, { puesto: i + 1, promedio: a.promedio, n: a.n }]));
+  ordenAnterior = new Map(filas.map((p, i) => [p.componente_id, { puesto: i + 1, promedio: p.promedio, n: p.n }]));
 }
 
-function mostrarDetalle(area) {
-  areaSeleccionada = area;
-  detalleArea.textContent = area;
+function mostrarDetalle(componenteId, nombrePilar) {
+  areaSeleccionada = componenteId;
+  nombrePilarSeleccionado = nombrePilar;
+  detalleArea.textContent = nombrePilar;
   seccionDetalle.hidden = false;
   gridAreas.querySelectorAll('.barra-area').forEach((el) => {
-    el.setAttribute('aria-pressed', String(el.dataset.area === area));
+    el.setAttribute('aria-pressed', String(el.dataset.area === componenteId));
   });
   seccionDetalle.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  dibujarRadar(area);
+  dibujarRadar(componenteId, nombrePilar);
 }
 
-function dibujarRadar(area) {
+function dibujarRadar(componenteId, nombrePilar) {
   const filas = datos.componentes
-    .filter((c) => c.area === area)
-    .sort((a, b) => a.componente_id.localeCompare(b.componente_id));
+    .filter((c) => c.componente_id === componenteId)
+    .sort((a, b) => a.proceso.localeCompare(b.proceso));
 
   radarComponentes.innerHTML = '';
 
   if (filas.length === 0) {
-    radarComponentes.innerHTML = '<p class="vacio">Aún no hay suficientes respuestas para este componente.</p>';
+    radarComponentes.innerHTML = '<p class="vacio">Aún no hay suficientes respuestas para este pilar.</p>';
     return;
   }
 
@@ -309,11 +346,20 @@ function dibujarRadar(area) {
   // Margen generoso alrededor del polígono: las etiquetas ancladas a un lado
   // (text-anchor start/end) crecen hacia afuera, no hacia el centro, y
   // necesitan sitio de sobra para no salirse del viewBox. Es el gráfico con
-  // más información de la página — se le da más lienzo a propósito.
-  const cx = 405, cy = 305, rMax = 143;
+  // más información de la página — se le da más lienzo a propósito. Ahora
+  // que los ejes son las áreas (hasta 24, antes eran 7 componentes), el
+  // círculo necesita más radio para que los puntos no queden amontonados
+  // en el centro — la letra más chica de .radar-etiqueta compensa el
+  // espacio que eso le quita al margen de las etiquetas.
+  const cx = 480, cy = 480, rMax = 205;
+  // Hueco central (donut): sin esto, todas las áreas en nivel 0 caen exacto
+  // en (cx, cy) — 24 puntos indistinguibles amontonados en el mismo pixel.
+  // Empujar el nivel 0 a un radio mínimo separa esos puntos a lo largo del
+  // círculo en vez de apilarlos en el centro.
+  const rMin = rMax * 0.16;
   const angulo = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
   const punto = (i, valor) => {
-    const r = (valor / max) * rMax;
+    const r = rMin + (valor / max) * (rMax - rMin);
     return [cx + r * Math.cos(angulo(i)), cy + r * Math.sin(angulo(i))];
   };
 
@@ -322,35 +368,61 @@ function dibujarRadar(area) {
     return `<polygon class="radar-anillo" points="${pts}" />`;
   }).join('');
 
-  const ejes = filas.map((_, i) => {
-    const [x, y] = punto(i, max);
-    return `<line class="radar-eje" x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" />`;
-  }).join('');
+  // Letra más chica pasado cierto número de ejes: menos ancho por etiqueta
+  // significa menos colisión lateral entre vecinas, aunque signifique más
+  // líneas partidas. Se calcula antes del escalonado porque el margen que
+  // queda libre para el texto (y por lo tanto cuánto se puede alejar el
+  // radio) depende de qué tan angosta es la letra.
+  const compacto = n > 32;
+
+  // Intercalado: con hasta 24 ejes separados por solo 15° entre sí, dos
+  // etiquetas vecinas al mismo radio casi se tocan. Alternar el radio
+  // (cerca/lejos) entre una etiqueta y la siguiente les da espacio aunque
+  // el ángulo entre ellas sea chico. Con el roster real llegan pilares con
+  // hasta 64 procesos — mismo problema pero peor — así que pasado ese punto
+  // se usan CUATRO niveles de radio en vez de solo alternar entre 2, con más
+  // distancia entre cada uno: con el texto ya en modo compacto (letra y
+  // envoltura más angostas) sobra margen del que reservaba el diseño
+  // original (275px) para estirar el radio máximo sin salirse del viewBox.
+  // Se calcula una vez por fila porque lo usan tanto la etiqueta como su
+  // línea guía.
+  const nivelesEtiqueta = n > 24 ? [1.08, 1.32, 1.56, 1.80] : [1.17, 1.42];
+  const factorEtiqueta = (i) => nivelesEtiqueta[i % nivelesEtiqueta.length];
 
   const formaPts = filas.map((c, i) => punto(i, Number(c.nivel_promedio)).join(',')).join(' ');
   const puntos = filas.map((c, i) => {
     const [x, y] = punto(i, Number(c.nivel_promedio));
-    return `<circle class="radar-punto" cx="${x}" cy="${y}" r="5.5" />`;
+    return `<circle class="radar-punto" cx="${x}" cy="${y}" r="${compacto ? 3.5 : 5.5}" />`;
   }).join('');
 
+  // Guías punteadas: van del punto de dato (no del centro) hasta cerca de
+  // su etiqueta, para que quede claro qué texto corresponde a qué punto sin
+  // cruzar todo el gráfico ni chocar con el resto del polígono.
+  const guias = filas.map((c, i) => {
+    const [x1, y1] = punto(i, Number(c.nivel_promedio));
+    const [x2, y2] = punto(i, max * (factorEtiqueta(i) - 0.1));
+    return `<line class="radar-guia" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" />`;
+  }).join('');
+
+  // Sin cifras junto a las etiquetas a propósito: el puntaje 0-4 es
+  // información para jefes de servicio (panel de administradores), no para
+  // la pantalla proyectada al público — aquí el radar solo muestra la forma.
   const etiquetas = filas.map((c, i) => {
-    const [x, y] = punto(i, max * 1.32);
+    const [x, y] = punto(i, max * factorEtiqueta(i));
     const anchor = Math.abs(x - cx) < 8 ? 'middle' : (x > cx ? 'start' : 'end');
-    const lineas = partirEnLineas(c.componente);
+    const lineas = partirEnLineas(c.proceso, compacto ? 16 : 20);
+    const dy = compacto ? 16 : 19;
     const nombreTspans = lineas
-      .map((linea, j) => `<tspan x="${x}" dy="${j === 0 ? 0 : 19}">${linea}</tspan>`)
+      .map((linea, j) => `<tspan x="${x}" dy="${j === 0 ? 0 : dy}">${linea}</tspan>`)
       .join('');
-    const yValor = y + lineas.length * 19 + 5;
-    return `
-      <text class="radar-etiqueta" x="${x}" y="${y}" text-anchor="${anchor}">${nombreTspans}</text>
-      <text class="radar-valor" x="${x}" y="${yValor}" text-anchor="${anchor}">${c.nivel_promedio}/4</text>
-    `;
+    const clase = compacto ? 'radar-etiqueta radar-etiqueta-compacta' : 'radar-etiqueta';
+    return `<text class="${clase}" x="${x}" y="${y}" text-anchor="${anchor}">${nombreTspans}</text>`;
   }).join('');
 
   radarComponentes.innerHTML = `
-    <svg viewBox="0 0 810 650" role="img" aria-label="Perfil de componentes de ${area}">
+    <svg viewBox="0 0 960 960" role="img" aria-label="Perfil por proceso del pilar ${nombrePilar}">
       ${anillos}
-      ${ejes}
+      ${guias}
       <polygon class="radar-forma" points="${formaPts}" />
       ${puntos}
       ${etiquetas}
