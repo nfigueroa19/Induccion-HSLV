@@ -102,8 +102,16 @@ def gauge_png_bytes(porcentaje: int) -> bytes:
 
 def _fila_componente(nombre: str, porcentaje: int) -> str:
     """Un componente CON evidencia: barra + %, igual que '.componentes li'
-    en la pantalla de resultado (sin la sugerencia — ahí tampoco se muestra)."""
+    en la pantalla de resultado (sin la sugerencia — ahí tampoco se muestra).
+
+    El ancho del relleno se calcula en píxeles exactos, NO en porcentaje:
+    Apple Mail en iPhone no respeta `width="X%"` en una tabla anidada tan
+    chica (la celda colapsa al contenido y solo se ve un puntito redondeado
+    en vez de una barra) — con píxeles fijos por celda sí se respeta."""
     porcentaje = max(0, min(100, porcentaje))
+    ancho_total = 90
+    ancho_relleno = round(ancho_total * porcentaje / 100)
+    ancho_vacio = ancho_total - ancho_relleno
     return f"""
     <tr>
       <td style="padding:6px 0;font-family:{_FUENTE_SANS};font-size:12.5px;color:{_TINTA};">
@@ -111,11 +119,11 @@ def _fila_componente(nombre: str, porcentaje: int) -> str:
           <tr>
             <td style="font-family:{_FUENTE_SANS};font-size:12.5px;color:{_TINTA};">{nombre}</td>
             <td width="40" align="right" style="font-family:{_FUENTE_SANS};font-size:12.5px;color:{_TINTA_SUAVE};font-variant-numeric:tabular-nums;">{porcentaje}%</td>
-            <td width="90" style="padding-left:10px;">
-              <table role="presentation" width="90" height="7" cellpadding="0" cellspacing="0" border="0" style="background-color:#EDF1E9;border-radius:4px;">
+            <td width="{ancho_total}" style="width:{ancho_total}px;padding-left:10px;">
+              <table role="presentation" width="{ancho_total}" height="7" cellpadding="0" cellspacing="0" border="0" style="width:{ancho_total}px;background-color:#EDF1E9;border-radius:4px;">
                 <tr>
-                  <td width="{porcentaje}%" height="7" style="background-color:{_VERDE_CLARO};border-radius:4px;font-size:1px;line-height:1px;">&nbsp;</td>
-                  <td height="7" style="font-size:1px;line-height:1px;">&nbsp;</td>
+                  <td width="{ancho_relleno}" height="7" style="width:{ancho_relleno}px;background-color:{_VERDE_CLARO};border-radius:4px;font-size:1px;line-height:1px;">&nbsp;</td>
+                  <td width="{ancho_vacio}" height="7" style="width:{ancho_vacio}px;font-size:1px;line-height:1px;">&nbsp;</td>
                 </tr>
               </table>
             </td>
