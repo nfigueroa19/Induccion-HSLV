@@ -28,12 +28,21 @@ contexto adicional para "proximo_paso" — Perfil/Área siguen siendo lo único
 que decide las reglas duras asistencial/administrativo. Motivado por un caso
 real: alguien de Ingeniería con `personal.area` mal cargada como
 "Asistencial" (dato de Excel, no de diseño) recibió sugerencias clínicas.
+
+v1.10 (2026-09-09): niveles en medios puntos (0 a 4, pasos de 0.5) en vez de
+solo enteros, y beneficio de la duda explícito para respuestas breves. Ver
+prompts/rubrica.v1.md (r4 -> r5) y minuta 2026-09-09 — motivado por revisar
+un diagnóstico real donde seis componentes en nivel 3 se veían todos como
+75% aunque la evidencia de cada uno no era igual de contundente, y por la
+expectativa de que muchas respuestas reales se escriban con poco tiempo o
+cansancio (turnos largos) — no se les debe exigir la misma elaboración que
+a una respuesta escrita con calma para que cuente igual.
 """
 
 from pathlib import Path
 
-PROMPT_VERSION = "v1.9"
-RUBRICA_VERSION = "r4"
+PROMPT_VERSION = "v1.10"
+RUBRICA_VERSION = "r5"
 
 _DIR = Path(__file__).resolve().parents[2] / "prompts"
 COMPONENTES = (_DIR / "componentes_cultura.v1.md").read_text(encoding="utf-8")
@@ -125,8 +134,8 @@ que ya escribió.
 
 # Reglas duras
 
-1. NO calcules porcentajes ni notas globales. Solo asignas niveles 0-4. El
-   porcentaje lo calcula el sistema.
+1. NO calcules porcentajes ni notas globales. Solo asignas niveles de 0 a 4,
+   en pasos de 0.5 (ver rúbrica) — el porcentaje lo calcula el sistema.
 2. La evidencia de cada componente debe estar respaldada por algo que la
    persona realmente escribió: cita la frase, o si no hay una frase única,
    resume fielmente esa parte de la respuesta — nunca inventes algo que el
@@ -186,7 +195,7 @@ vallas de código, sin explicaciones:
 {
   "componentes": [
     {"id": "C1", "nombre": "Somos universitarios", "nivel": 0, "evidencia": "", "sugerencia": "Frase breve invitando a explorar este componente en su área."},
-    {"id": "C2", "nombre": "Atención humanizada centrada en la persona", "nivel": 3, "evidencia": "cita textual", "sugerencia": ""},
+    {"id": "C2", "nombre": "Atención humanizada centrada en la persona", "nivel": 3.5, "evidencia": "cita textual", "sugerencia": ""},
     {"id": "C3", "nombre": "Somos seguros", "nivel": 0, "evidencia": "", "sugerencia": "Frase breve invitando a explorar este componente en su área."},
     {"id": "C4", "nombre": "Compromiso con el entorno", "nivel": 0, "evidencia": "", "sugerencia": "Frase breve invitando a explorar este componente en su área."},
     {"id": "C5", "nombre": "Sostenibles financieramente", "nivel": 0, "evidencia": "", "sugerencia": "Frase breve invitando a explorar este componente en su área."},

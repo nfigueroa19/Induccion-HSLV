@@ -45,6 +45,14 @@ const paneCargando = document.getElementById('pane-cargando');
 const paneResultado = document.getElementById('pane-resultado');
 const paneError = document.getElementById('pane-error');
 const estadoEspera = document.getElementById('estado-espera');
+const btnCerrarModal = document.getElementById('cerrar-modal');
+
+// Mientras esto es true, el diagnóstico sigue en vuelo: no se puede cerrar el
+// modal (ni con el botón, ni con Escape, ni con clic afuera) y se advierte
+// antes de recargar/cerrar la pestaña, porque cerrar en ese punto no cancela
+// nada en el servidor pero sí le hace perder a la persona el resultado que ya
+// está en camino.
+let esperandoDiagnostico = false;
 
 const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -225,10 +233,22 @@ function cerrarModalAnimado() {
   }, cierreMs);
 }
 
-document.getElementById('cerrar-modal').addEventListener('click', cerrarModalAnimado);
+btnCerrarModal.addEventListener('click', cerrarModalAnimado);
+
+// Evento nativo de <dialog>: se dispara con Escape (y es lo que habría que
+// prevenir para un clic afuera si se le pidiera al modal cerrarse solo con
+// eso). Mientras el diagnóstico está en vuelo, no se deja salir por ahí.
 modal.addEventListener('cancel', (e) => {
   e.preventDefault();
-  cerrarModalAnimado();
+  if (!esperandoDiagnostico) cerrarModalAnimado();
+});
+
+// showModal() no cierra el modal al hacer clic en el backdrop por defecto,
+// pero por si algún estilo/click delegado llegara a intentarlo: un clic cuyo
+// target es el propio <dialog> es un clic en el backdrop (el contenido real
+// vive en los <div> internos), así que se ignora explícitamente.
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) e.stopPropagation();
 });
 
 // ---------------------------------------------------------------------------
@@ -306,7 +326,9 @@ function abrirModal() {
   paneResultado.hidden = true;
   paneError.hidden = true;
   paneCargando.hidden = false;
+  btnCerrarModal.hidden = true;
   estadoEspera.textContent = '';
+  esperandoDiagnostico = true;
   modal.classList.remove('is-closing');
   modal.showModal();
   if (sinMovimiento) {
@@ -321,7 +343,19 @@ function mostrarPane(pane) {
   paneResultado.hidden = pane !== paneResultado;
   paneError.hidden = pane !== paneError;
   pane.hidden = false;
+  btnCerrarModal.hidden = false;
+  esperandoDiagnostico = false;
 }
+
+// Advertencia nativa del navegador si intenta recargar o cerrar la pestaña
+// mientras el diagnóstico sigue en vuelo. El texto que muestran Chrome/Firefox
+// es fijo (ignoran returnValue), pero SÍ hace falta preventDefault + asignar
+// returnValue para que el navegador decida mostrar el cuadro de confirmación.
+window.addEventListener('beforeunload', (e) => {
+  if (!esperandoDiagnostico) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 async function esperarDiagnostico(id) {
   for (let intento = 0; intento < INTENTOS_MAX; intento++) {

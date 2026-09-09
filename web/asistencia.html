@@ -6,8 +6,23 @@
 <title>Registro de asistencia — HSLV</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
 <link rel="stylesheet" href="css/style.css?v=20260907b" />
+<link rel="stylesheet" href="css/splash.css" />
 </head>
 <body>
+
+<div id="splashScreen">
+  <img class="splash-img" src="Assets/Logo/logo-unidad-ia.jpg" alt="Unidad de Inteligencia Artificial — Hospital Susana López de Valencia" />
+  <div class="splash-loader-wrap">
+    <div class="splash-loader-label">
+      <span>Cargando</span>
+      <span id="splashPercent">0%</span>
+    </div>
+    <div class="splash-loader-track">
+      <div id="splashBar" class="splash-loader-bar"></div>
+    </div>
+  </div>
+</div>
+
 <div class="page">
 
   <img class="watermark" src="Assets/Logo/hslv-mark.png" alt="" aria-hidden="true" />
@@ -79,5 +94,6 @@
 </div>
 
 <script src="js/asistencia.js?v=20260907c"></script>
+<script src="js/splash.js"></script>
 </body>
 </html>

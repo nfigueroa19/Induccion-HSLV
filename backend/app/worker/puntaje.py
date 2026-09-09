@@ -11,6 +11,8 @@ Piso 55 y techo 97 son deliberados (ver Origen del proyecto):
   - techo: "si alguien tuviera 100% no tendría sentido de mejora continua".
 """
 
+import hashlib
+
 PISO = 55
 TECHO = 97
 
@@ -49,25 +51,50 @@ BANDAS = [
 ]
 
 
-def _nivel_efectivo(nivel: int) -> float:
-    """Aplica el piso institucional a un nivel 0-4 crudo del modelo."""
+def _nivel_efectivo(nivel: float) -> float:
+    """Aplica el piso institucional a un nivel 0-4 crudo del modelo.
+
+    Desde r5 el modelo entrega medios puntos (0, 0.5, ..., 4), no solo
+    enteros — la fórmula ya era continua, solo cambia la resolución de lo
+    que entra."""
     nivel = max(0, min(nivel, 4))
     return NIVEL_PISO + (4 - NIVEL_PISO) * nivel / 4
 
 
 def calcular_porcentaje(componentes: list[dict]) -> int:
-    efectivos = [_nivel_efectivo(int(c["nivel"])) for c in componentes]
+    efectivos = [_nivel_efectivo(float(c["nivel"])) for c in componentes]
     suma = sum(efectivos[:COMPONENTES_CONTADOS])
     suma = max(0, min(suma, MAX_PUNTOS))
     return round(PISO + (TECHO - PISO) * suma / MAX_PUNTOS)
 
 
-def porcentaje_componente(nivel: int) -> int:
-    """% individual mostrado en 'Cómo se ve tu huella'. SIN piso: honesto,
-    0-100% real según el nivel que asignó el modelo. La UI (script.js) no
-    muestra "0%" en crudo para no desalentar — pinta un estado neutral
-    ("aún sin evidencia") en vez de fabricar un número."""
-    return round(max(0, min(int(nivel), 4)) / 4 * 100)
+def _jitter(semilla: str, rango: int = 3) -> int:
+    """Variación pequeña y determinística (-rango..+rango) a partir de una
+    semilla estable (respuesta_id + id de componente). Decisión 2026-09-09:
+    aunque r5 ya da más resolución con medios puntos, esto es una capa de
+    respaldo por si un proveedor del router sigue devolviendo solo enteros
+    limpios — sin esto, varios componentes en el mismo nivel entero seguirían
+    viéndose con el % idéntico. Mismo dato de entrada -> mismo resultado
+    siempre (no es aleatorio en cada carga), pero distinto entre personas y
+    entre componentes de la misma persona."""
+    h = hashlib.sha256(semilla.encode()).hexdigest()
+    return int(h[:8], 16) % (2 * rango + 1) - rango
+
+
+def porcentaje_componente(nivel: float, semilla: str | None = None) -> int:
+    """% individual mostrado en 'Cómo se ve tu huella'. SIN piso institucional:
+    honesto, según el nivel que asignó el modelo (con medios puntos desde r5).
+    La UI (script.js) no muestra "0%" en crudo para no desalentar — pinta un
+    estado neutral ("aún sin evidencia") en vez de fabricar un número, por
+    eso el jitter nunca se aplica cuando el nivel es 0.
+
+    `semilla` (típicamente f"{respuesta_id}:{componente_id}") activa el
+    jitter de respaldo — se omite si no se pasa, para no romper otros
+    llamadores existentes."""
+    base = round(max(0, min(float(nivel), 4)) / 4 * 100)
+    if base == 0 or semilla is None:
+        return base
+    return max(1, min(100, base + _jitter(semilla)))
 
 
 def nivel_cualitativo(porcentaje: int) -> str:

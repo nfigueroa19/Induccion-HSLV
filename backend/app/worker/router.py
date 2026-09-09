@@ -108,12 +108,15 @@ def _validar(datos: dict) -> dict:
 
     for c in comps:
         try:
-            nivel = int(c["nivel"])
+            nivel = float(c["nivel"])
         except (KeyError, TypeError, ValueError) as e:
             raise RespuestaInvalida(f"nivel ilegible en {c.get('id')}") from e
         if not 0 <= nivel <= 4:
             raise RespuestaInvalida(f"nivel fuera de rango en {c.get('id')}: {nivel}")
-        c["nivel"] = nivel
+        # La rúbrica r5 solo define 9 anclajes (0, 0.5, ..., 4). Si el modelo
+        # manda algo entre dos anclajes (ej. 3.2), se ajusta al más cercano
+        # en vez de rechazar toda la respuesta por un redondeo del proveedor.
+        c["nivel"] = round(nivel * 2) / 2
 
     datos.setdefault("mensaje_cierre", "")
     return datos

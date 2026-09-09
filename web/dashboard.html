@@ -6,8 +6,23 @@
 <title>Indicadores — Diagnóstico ADN Susana</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
 <link rel="stylesheet" href="css/dashboard.css" />
+<link rel="stylesheet" href="css/splash.css" />
 </head>
 <body>
+
+<div id="splashScreen">
+  <img class="splash-img" src="Assets/Logo/logo-unidad-ia.jpg" alt="Unidad de Inteligencia Artificial — Hospital Susana López de Valencia" />
+  <div class="splash-loader-wrap">
+    <div class="splash-loader-label">
+      <span>Cargando</span>
+      <span id="splashPercent">0%</span>
+    </div>
+    <div class="splash-loader-track">
+      <div id="splashBar" class="splash-loader-bar"></div>
+    </div>
+  </div>
+</div>
+
 <div class="panel">
 
   <header class="topbar">
@@ -56,5 +71,6 @@
 <div id="tooltip" class="tooltip" hidden></div>
 
 <script src="js/dashboard.js"></script>
+<script src="js/splash.js"></script>
 </body>
 </html>

@@ -107,7 +107,9 @@ async def _enviar_correo_diagnostico(pool, respuesta_id, porcentaje, nivel, crud
                 {
                     "nombre": c.get("nombre"),
                     "nivel": c.get("nivel"),
-                    "porcentaje": porcentaje_componente(c.get("nivel", 0)),
+                    "porcentaje": porcentaje_componente(
+                        c.get("nivel", 0), f"{respuesta_id}:{c.get('id')}"
+                    ),
                     "sugerencia": c.get("sugerencia", ""),
                 }
                 for c in cruda.get("componentes", [])

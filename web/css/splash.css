@@ -1,0 +1,62 @@
+/* ══════════════════════════════════════
+   SPLASH SCREEN — Unidad de IA HSLV
+   Compartido por index.html, asistencia.html y dashboard.html.
+   Fondo blanco a propósito: coincide con --color-bg de cada página, así el
+   fade-out final no salta de negro a blanco. Imagen sin border-radius ni
+   box-shadow: va plana, sin marco.
+   ══════════════════════════════════════ */
+
+#splashScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+  background: #FFFFFF;
+  transition: opacity 0.35s ease;
+}
+#splashScreen.splash-oculto {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-img {
+  display: block;
+  width: min(560px, 82vw);
+  max-height: 42vh;
+  object-fit: contain;
+}
+
+.splash-loader-wrap {
+  width: min(320px, 78vw);
+}
+.splash-loader-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  color: #4B5A45;
+  margin-bottom: 8px;
+}
+.splash-loader-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(22, 36, 26, 0.1);
+  overflow: hidden;
+}
+.splash-loader-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #327531, #76B82A);
+  transition: width 0.2s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #splashScreen { transition: none; }
+  .splash-loader-bar { transition: none; }
+}

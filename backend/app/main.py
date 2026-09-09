@@ -479,7 +479,9 @@ async def obtener_diagnostico(respuesta_id: str):
                 "id": c.get("id"),
                 "nombre": c.get("nombre"),
                 "nivel": c.get("nivel"),
-                "porcentaje": porcentaje_componente(c.get("nivel", 0)),
+                "porcentaje": porcentaje_componente(
+                    c.get("nivel", 0), f"{respuesta_id}:{c.get('id')}"
+                ),
                 "sugerencia": c.get("sugerencia", ""),
             }
             for c in payload.get("componentes", [])

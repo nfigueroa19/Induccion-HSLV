@@ -415,6 +415,13 @@ button.submit[disabled] {
   padding: 14px 0 6px;
 }
 .modal-cargando p { font-size: 13.5px; color: var(--color-ink-soft); }
+.dato-ia { color: var(--color-primary); font-weight: 600; }
+
+.credito-ia {
+  font-size: 11px;
+  color: var(--color-ink-soft);
+  margin: -6px 0 10px;
+}
 .pulso .gauge-base {
   background: var(--color-accent);
   animation: latido 1.6s ease-in-out infinite;
