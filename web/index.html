@@ -31,7 +31,8 @@
     <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
     <div class="wordmark">
       <div class="name">Hospital Susana López de Valencia E.S.E.</div>
-      <div class="sub">Inducción anual</div>
+      <div class="sub">Memoria, Huella e Identidad</div>
+      <div class="sub">Reinducción Institucional 2026</div>
     </div>
   </div>
 
@@ -57,7 +58,9 @@
         <p class="status" id="status-cedula" role="status"></p>
       </form>
 
-      <!-- Solo aparece si la cédula no está en el roster `personal`. -->
+      <!-- Aparece si la cédula no está en `personal`, o si está pero le falta
+           correo o entidad — en ese caso se precarga con lo que ya se sabe y
+           al enviarla reemplaza esos datos en `personal`. -->
       <form id="form-contacto" autocomplete="off" hidden>
         <div class="field">
           <label for="nombre">Nombre(s) y Apellidos</label>
@@ -75,19 +78,27 @@
         </div>
 
         <div class="field">
-          <label for="area-contacto">Área</label>
-          <select id="area-contacto" name="area" autocomplete="off" required>
-            <option value="" disabled selected>Selecciona tu área</option>
+          <label for="cargo-contacto">Cargo</label>
+          <select id="cargo-contacto" name="cargo" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu cargo</option>
           </select>
-          <input type="text" id="area-contacto-otra" name="area-otra" placeholder="Escribe tu área" autocomplete="off" hidden />
+          <input type="text" id="cargo-contacto-otra" name="cargo-otra" placeholder="Escribe tu cargo" autocomplete="off" hidden />
         </div>
 
         <div class="field">
-          <label for="servicio">Servicio</label>
-          <select id="servicio" name="servicio" autocomplete="off" required disabled>
-            <option value="" disabled selected>Primero selecciona tu área</option>
+          <label for="proceso-contacto">Proceso</label>
+          <select id="proceso-contacto" name="proceso" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu proceso</option>
           </select>
-          <input type="text" id="servicio-otra" name="servicio-otra" placeholder="Escribe tu servicio" autocomplete="off" hidden />
+          <input type="text" id="proceso-contacto-otra" name="proceso-otra" placeholder="Escribe tu proceso" autocomplete="off" hidden />
+        </div>
+
+        <div class="field">
+          <label for="entidad-contacto">Entidad / Sindicato</label>
+          <select id="entidad-contacto" name="entidad" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu entidad</option>
+          </select>
+          <input type="text" id="entidad-contacto-otra" name="entidad-otra" placeholder="Escribe tu entidad" autocomplete="off" hidden />
         </div>
 
         <button class="submit" type="submit">Continuar</button>
@@ -117,18 +128,18 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Hospital Universitario</td><td>docencia, investigación</td></tr>
-                <tr><td>Atención Humanizada centrada en la persona</td><td>trato humano, escucha</td></tr>
-                <tr><td>Seguridad del Paciente</td><td>seguridad, protocolos</td></tr>
-                <tr><td>Compromiso con el Entorno</td><td>ambiental, social</td></tr>
-                <tr><td>Sostenibilidad</td><td>uso responsable de los recursos</td></tr>
-                <tr><td>Gestión del Conocimiento</td><td>documentar, mejorar procesos</td></tr>
-                <tr><td>Planeación y Calidad</td><td>mejora continua</td></tr>
+                <tr><td>Hospital Universitario</td><td>Formamos el talento humano en salud de la región, Articulamos docencia, investigación y práctica clínica, Acompañamos a los estudiantes con calidad y seguridad</td></tr>
+                <tr><td>Atención Humanizada centrada en la persona</td><td>Escuchamos, comprendemos y acompañamos a cada persona, Reconocemos la dignidad y las necesidades de cada paciente, Cuidamos también a quienes cuidan</td></tr>
+                <tr><td>Seguridad del Paciente</td><td>Aprendemos de cada evento para prevenir riesgos, Reportamos con responsabilidad y confianza, Construimos una huella de cuidado seguro</td></tr>
+                <tr><td>Compromiso con el Entorno</td><td>Prevenimos y minimizamos nuestro impacto ambiental, Gestionamos responsablemente los residuos y los recursos, Construimos ambientes seguros y amigables</td></tr>
+                <tr><td>Sostenibilidad</td><td>Usamos los recursos de forma eficiente y transparente, Garantizamos información financiera confiable y oportuna, Contribuimos a la sostenibilidad del Hospital</td></tr>
+                <tr><td>Gestión del Conocimiento e Innovación</td><td>Investigación para generar conocimiento, Documentamos y compartimos experiencias exitosas, Innovamos para mejorar los procesos</td></tr>
+                <tr><td>Planeación y Calidad</td><td>Planeamos, verificamos y mejoramos continuamente, Anticipamos riesgos antes de que se conviertan en eventos, Alineamos la labor diaria con la excelencia institucional</td></tr>
               </tbody>
             </table>
           </div>
 
-          <label for="pregunta">Según los pilares de la Cultura Susana, ¿cómo se conecta tu identidad como persona y colaborador del HSLV con tu rol diario y tu aporte a la atención de nuestros usuarios?</label>
+          <label for="pregunta">Cuéntanos cómo, desde tu rol dentro de la institución, aplicas y fortaleces los pilares de la Cultura Susana en tu trabajo diario.</label>
           <textarea id="pregunta" name="pregunta" minlength="200" maxlength="2000" autocomplete="off" required></textarea>
           <p class="counter"><span id="contador">0</span>/2000</p>
         </div>
@@ -144,7 +155,7 @@
         <div class="field consent">
           <label for="autorizacion">
             <input type="checkbox" id="autorizacion" name="autorizacion" required />
-            <span>Autorizo al Hospital Susana López de Valencia E.S.E. a tratar mis datos personales con el fin exclusivo de generar mi diagnóstico de inducción y reportes agregados de mejora institucional, conforme a la Ley 1581 de 2012.</span>
+            <span>Autorizo al Hospital Susana López de Valencia E.S.E. a tratar mis datos personales con la finalidad exclusiva de analizar, de manera anonimizada y mediante herramientas de inteligencia artificial, mi respuesta, con el propósito de generar un indicador porcentual grupal sobre el nivel de apropiación de los pilares de la Cultura Susana, para fines de mejora institucional, de conformidad con la Ley 1581 de 2012.</span>
           </label>
         </div>
 
@@ -223,7 +234,7 @@
 
 <!-- ?v= es cache-buster manual: python -m http.server no manda Cache-Control,
      así que el navegador puede quedarse con una copia vieja en dev local. -->
-<script src="js/script.js?v=20260907b"></script>
+<script src="js/script.js?v=20260911a"></script>
 <script src="js/splash.js"></script>
 </body>
 </html>

@@ -31,6 +31,7 @@ class Proveedor:
     extra: dict = field(default_factory=dict)  # parámetros extra del body, por proveedor
 
 
+OPENAI_URL = "https://api.openai.com/v1"
 NIM_URL = "https://integrate.api.nvidia.com/v1"
 GROQ_URL = "https://api.groq.com/openai/v1"
 CEREBRAS_URL = "https://api.cerebras.ai/v1"
@@ -65,6 +66,23 @@ def catalogo() -> list[Proveedor]:
                 prioridad=2,
             ),
         ]
+
+    # Prioridad 1: OpenAI de pago (recarga de 5 USD, 2026-09-11) — modelo
+    # principal. gpt-4o-mini: 0.15 USD/1M tokens entrada, 0.60 USD/1M salida;
+    # con el tamaño del prompt de este proyecto un diagnóstico cuesta
+    # fracciones de centavo, así que 5 USD alcanzan para miles. Todas las
+    # demás rutas (prioridad 3+) quedan de respaldo automático: el router
+    # (ver router.py Router._candidatas/completar) solo pasa a la siguiente
+    # ruta sana cuando esta falla o se queda sin cupo del minuto.
+    if cfg.openai_api_key:
+        rutas.append(Proveedor(
+            id="openai:gpt-4o-mini",
+            base_url=OPENAI_URL,
+            api_key=cfg.openai_api_key,
+            modelo="gpt-4o-mini",
+            rpm=60,                # conservador frente al límite real de tier 1
+            prioridad=1,
+        ))
 
     # Prioridad 4: rutas directas de NIM — DESHABILITADAS 2026-09-07.
     # Los dos modelos (meta/llama-3.3-70b-instruct y

@@ -48,6 +48,7 @@ class Config(BaseSettings):
     # --- Proveedores de LLM (todos opcionales: se usan los que estén) -------
     omniroute_base_url: str = ""
     omniroute_api_key: str = ""
+    openai_api_key: str = ""
     nvidia_api_key: str = ""
     groq_api_key: str = ""
     cerebras_api_key: str = ""

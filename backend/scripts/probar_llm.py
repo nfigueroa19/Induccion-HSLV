@@ -56,7 +56,7 @@ async def principal(perfil: str, area: str, texto: str) -> int:
     print(f"porcentaje : {porcentaje}%  ->  {nivel_cualitativo(porcentaje)}\n")
 
     for c in datos["componentes"]:
-        marca = "·" if c["nivel"] == 0 else "#" * c["nivel"]
+        marca = "·" if c["nivel"] == 0 else "#" * int(c["nivel"] * 2)
         print(f"  {c['id']}  {c['nivel']}  {marca:<4}  {c.get('nombre', '')}")
         if c.get("evidencia"):
             print(f"          \"{c['evidencia'][:90]}\"")

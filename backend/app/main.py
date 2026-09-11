@@ -49,17 +49,6 @@ AREAS_ADMINISTRATIVAS = [
     "Servicios Generales", "Mantenimiento", "Subdirección Científica",
 ]
 
-# Catálogo cerrado para el <select> "Área" del formulario de contacto
-# (cédula no encontrada en `personal`). Refleja las categorías reales de la
-# columna personal.area: aunque tiene 26 valores crudos, en el fondo son solo
-# estas pocas con variantes de mayúsculas y algunos datos de `proceso` mal
-# cargados ahí por error — ver Segundo Cerebro/01 - Arquitectura/Analisis y
-# mapeo de Personal_Susana.xlsx.md. No confundir con AREAS_ASISTENCIALES/
-# AREAS_ADMINISTRATIVAS (taxonomía distinta, del flujo de diagnóstico).
-CATEGORIAS_AREA_PERSONAL = [
-    "Asistencial", "Administrativo", "Gerencial", "Logístico", "Mantenimiento",
-]
-
 # Correcciones puntuales de typos detectados en personal.proceso que la
 # deduplicación case-insensitive no atrapa por sí sola (letras de más/menos,
 # no solo mayúsculas/tildes/espacios). Clave en minúsculas -> grafía correcta.
@@ -109,13 +98,15 @@ app.add_middleware(
 class RespuestaIn(BaseModel):
     nombre: str = Field(min_length=3, max_length=120)
     cedula: str = Field(min_length=5, max_length=15)
-    area: str = Field(min_length=2, max_length=80)
-    # Este `servicio` es el que mandó el cliente (formulario de contacto,
-    # cédula no encontrada) y solo sirve para completar `personal` en el
-    # upsert al final de recibir(). El servicio que sí viaja a `respuestas`
-    # (columna `servicio`, para el prompt del LLM) se lee del roster
-    # `personal.proceso` en el momento del insert, no de este campo.
-    servicio: str | None = None
+    # cargo/proceso/entidad/correo/telefono solo vienen del cliente cuando se
+    # mostró el formulario de contacto (cédula no encontrada, o encontrada
+    # pero sin correo/entidad en `personal`) — en ese caso reemplazan lo que
+    # hubiera en `personal` (ver upsertar_personal). Si la cédula ya estaba
+    # completa, viajan en None y recibir() lee cargo/proceso directo del
+    # roster para el prompt del LLM, sin tocar `personal`.
+    cargo: str | None = None
+    proceso: str | None = None
+    entidad: str | None = None
     telefono: str | None = None
     texto: str = Field(min_length=200, max_length=2000)
     correo: EmailStr | None = None
@@ -128,7 +119,7 @@ class RespuestaIn(BaseModel):
             raise ValueError("La cédula debe contener solo números.")
         return limpia
 
-    @field_validator("nombre", "area", "texto")
+    @field_validator("nombre", "texto")
     @classmethod
     def sin_espacios_sobrantes(cls, v: str) -> str:
         return v.strip()
@@ -155,68 +146,55 @@ async def gauge(porcentaje: int):
     )
 
 
-@app.get("/v1/areas")
-async def areas():
-    """Catálogo área→servicio para el formulario corto de contacto que se
-    muestra cuando la cédula no está en el roster `personal`. Solo lectura.
-
-    Antes este endpoint devolvía `servicios` tomado de AREAS_ASISTENCIALES/
-    AREAS_ADMINISTRATIVAS (taxonomía de /v1/respuestas, sin relación con
-    personal.area). Se reemplazó por un catálogo derivado en vivo de
-    personal.area/personal.proceso (ver Analisis y mapeo de
-    Personal_Susana.xlsx.md), agrupado por las 5 categorías reales de área
-    (CATEGORIAS_AREA_PERSONAL) y deduplicado por servicio (case-insensitive,
-    se conserva la grafía más frecuente como canónica). Filas con area fuera
-    de esas 5 categorías (basura de carga o NULL, ~5% del roster) se excluyen
-    del catálogo — decisión del usuario 2026-09-01.
-    """
-    def sin_tildes(s: str) -> str:
-        return "".join(
-            c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn"
-        )
-
+async def _valores_columna(columna: str) -> list[str]:
+    """Valores distintos de una columna de texto en `personal`, deduplicados
+    sin distinguir mayúsculas/espacios (se conserva la grafía más frecuente
+    como canónica). `columna` siempre es uno de los tres literales fijos que
+    llaman a esta función más abajo, nunca entrada del usuario."""
     p = await db.pool()
     filas = await p.fetch(
-        "select area, proceso, count(*) as n from personal group by area, proceso"
+        f"select {columna} as v, count(*) as n from personal "
+        f"where {columna} is not null and trim({columna}) != '' "
+        f"group by {columna}"
     )
-
-    # area cruda -> área canónica, comparando sin tildes (el dato crudo trae
-    # variantes como "logistico" sin tilde vs. el canónico "Logístico").
-    canon = {sin_tildes(a.lower()): a for a in CATEGORIAS_AREA_PERSONAL}
-
-    # area canónica (case real) -> {servicio en minúsculas -> (grafía más
-    # frecuente, conteo)}, para quedarnos con la grafía más común de cada
-    # servicio dentro de cada área.
-    por_area: dict[str, dict[str, tuple[str, int]]] = {a: {} for a in CATEGORIAS_AREA_PERSONAL}
+    agrupado: dict[str, tuple[str, int]] = {}
     for f in filas:
-        if f["area"] is None or not f["proceso"] or not f["proceso"].strip():
-            continue
-        area = canon.get(sin_tildes(f["area"].lower().strip()))
-        if area is None:
-            continue
-        proceso = re.sub(r"\s+", " ", f["proceso"].strip())
-        proceso = CORRECCIONES_PROCESO.get(proceso.lower(), proceso)
-        proceso = proceso[0].upper() + proceso[1:]  # ej. "vacunacion" -> "Vacunacion"
-        clave = proceso.lower()
-        actual = por_area[area].get(clave)
+        valor = re.sub(r"\s+", " ", f["v"].strip())
+        valor = CORRECCIONES_PROCESO.get(valor.lower(), valor)
+        clave = valor.lower()
+        actual = agrupado.get(clave)
         if actual is None or f["n"] > actual[1]:
-            por_area[area][clave] = (proceso, f["n"])
+            agrupado[clave] = (valor, f["n"])
+    return sorted(grafia for grafia, _ in agrupado.values())
 
-    catalogo = {
-        area: sorted(grafia for grafia, _ in servicios.values())
-        for area, servicios in por_area.items()
+
+@app.get("/v1/catalogos")
+async def catalogos():
+    """Cargo, proceso y entidad ya presentes en el roster `personal`, para
+    los <select> del formulario de contacto (cédula no encontrada o con
+    correo/entidad sin diligenciar). Cada uno lleva además una opción
+    "Otra..." en el frontend para texto libre, por si el valor real todavía
+    no está en el roster."""
+    return {
+        "cargos": await _valores_columna("cargo"),
+        "procesos": await _valores_columna("proceso"),
+        "entidades": await _valores_columna("entidad"),
     }
-    return {"catalogo": catalogo}
 
 
 @app.get("/v1/personal/{cedula}")
 async def buscar_personal(cedula: str):
     """Lookup de solo lectura contra el roster `personal` (RR.HH.) por cédula.
 
-    Prueba de integración: todavía no escribe nada en ninguna tabla. Sirve
-    para que el frontend decida el siguiente paso (bienvenida vs. formulario
-    corto de contacto) sin guardar datos nuevos. Devuelve lo mínimo — nunca
-    correo ni teléfono — para no exponer más del roster de lo necesario.
+    Sirve para que el frontend decida el siguiente paso:
+      - No existe                              -> formulario de contacto completo.
+      - Existe pero sin entidad o sin correo   -> mismo formulario, precargado
+        con lo que ya se sabe (`completo: false`).
+      - Existe y ya tiene entidad y correo     -> se salta el formulario.
+
+    Nunca devuelve el correo ni el teléfono reales (solo si hay alguno
+    registrado, vía `completo`) para no exponer más del roster de lo
+    necesario a quien solo está consultando una cédula.
     """
     limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
     if not limpia.isdigit():
@@ -224,21 +202,63 @@ async def buscar_personal(cedula: str):
 
     p = await db.pool()
     fila = await p.fetchrow(
-        "select nombre_completo, area from personal where cedula = $1",
+        """
+        select nombre_completo, cargo, proceso, entidad,
+               (email_institucional is not null or email_secundario is not null) as tiene_correo
+          from personal where cedula = $1
+        """,
         int(limpia),
     )
     if fila is None:
-        return {"existe": False}
-    return {"existe": True, "nombre": fila["nombre_completo"], "area": fila["area"]}
+        return {"existe": False, "completo": False}
+    completo = fila["entidad"] is not None and fila["tiene_correo"]
+    return {
+        "existe": True,
+        "completo": completo,
+        "nombre": fila["nombre_completo"],
+        "cargo": fila["cargo"],
+        "proceso": fila["proceso"],
+        "entidad": fila["entidad"],
+    }
+
+
+async def upsertar_personal(con_o_pool, cedula: int, nombre: str, cargo, proceso,
+                             entidad, telefono, correo) -> None:
+    """Crea o actualiza la fila de `personal` con lo que la persona acaba de
+    confirmar en el formulario de contacto. A diferencia de un upsert que
+    solo completa huecos, este SÍ reemplaza lo que ya hubiera: el formulario
+    solo se muestra cuando el dato estaba incompleto (cédula nueva, o sin
+    correo/entidad), así que lo que llega aquí es la corrección que la
+    persona acaba de confirmar. El correo se guarda en `email_secundario`
+    (mismo campo que usa el roster de RR.HH. para el correo del Excel; ver
+    worker/run.py, que intenta primero email_institucional).
+    """
+    await con_o_pool.execute(
+        """
+        insert into personal (cedula, nombre_completo, cargo, proceso, entidad,
+                               telefono, email_secundario, origen)
+        values ($1, $2, $3, $4, $5, $6, $7, 'autorregistro')
+        on conflict (cedula) do update
+           set nombre_completo  = excluded.nombre_completo,
+               cargo            = excluded.cargo,
+               proceso          = excluded.proceso,
+               entidad          = excluded.entidad,
+               telefono         = excluded.telefono,
+               email_secundario = excluded.email_secundario
+        """,
+        cedula, nombre, cargo, proceso, entidad, telefono, correo,
+    )
 
 
 class AsistenciaIn(BaseModel):
     cedula: str = Field(min_length=5, max_length=15)
     encontrado: bool
     nombre: str | None = None
-    area: str | None = None
-    servicio: str | None = None
+    cargo: str | None = None
+    proceso: str | None = None
+    entidad: str | None = None
     telefono: str | None = None
+    correo: EmailStr | None = None
 
     @field_validator("cedula")
     @classmethod
@@ -295,25 +315,17 @@ async def registrar_asistencia(payload: AsistenciaIn, request: Request):
         returning id
         """,
         cfg.campana, payload.cedula, payload.encontrado, payload.nombre,
-        payload.area, payload.servicio, payload.telefono, mac, ip_cliente,
+        payload.cargo, payload.proceso, payload.telefono, mac, ip_cliente,
     )
 
-    # Cédula no encontrada en `personal`: la persona quedó registrada en
-    # `asistencia`, pero el roster de RR.HH. sigue sin ella. Se completa con
-    # lo esencial que ya pidió el formulario, marcada `origen='autorregistro'`
-    # para no mezclarla sin distinción con la carga verificada de RR.HH.
-    # `on conflict do nothing`: si alguien más ya la creó entretanto (otra
-    # cédula del roster oficial que llegó después, o doble envío), no se
-    # sobreescribe.
-    if not payload.encontrado and payload.nombre and payload.area:
-        await p.execute(
-            """
-            insert into personal (cedula, nombre_completo, area, proceso, telefono, origen)
-            values ($1, $2, $3, $4, $5, 'autorregistro')
-            on conflict (cedula) do nothing
-            """,
-            int(payload.cedula), payload.nombre, payload.area,
-            payload.servicio, payload.telefono,
+    # Se mostró el formulario de contacto (cédula no encontrada, o encontrada
+    # pero sin correo/entidad) y la persona lo llenó: crea o actualiza su fila
+    # en `personal` con lo que acaba de confirmar — ver upsertar_personal().
+    if payload.nombre and (payload.cargo or payload.proceso or payload.entidad
+                            or payload.telefono or payload.correo):
+        await upsertar_personal(
+            p, int(payload.cedula), payload.nombre, payload.cargo,
+            payload.proceso, payload.entidad, payload.telefono, payload.correo,
         )
 
     # `staff`: el frontend usa esto para NO poner el candado de localStorage
@@ -334,26 +346,38 @@ async def recibir(payload: RespuestaIn):
         cfg.pepper_cedula.encode(), payload.cedula.encode(), hashlib.sha256
     ).hexdigest()
 
-    # payload.area puede venir en dos taxonomías: la vieja de servicios
-    # específicos (AREAS_ASISTENCIALES, todavía usada por prueba_carga.py) o
-    # la real de personal.area/CATEGORIAS_AREA_PERSONAL ("Asistencial" a
-    # secas) que ya usan index.html y asistencia.html desde el lookup real.
-    perfil = (
-        "asistencial"
-        if payload.area in AREAS_ASISTENCIALES
-        or payload.area.strip().lower() == "asistencial"
-        else "administrativo"
-    )
-
     p = await db.pool()
     async with p.acquire() as con, con.transaction():
-        # Roster real (RR.HH.), no lo que mandó el cliente: cargo/proceso/
-        # perfil profesional solo viajan al LLM si ya están en `personal`.
-        # Si la cédula todavía no está (autorregistro), quedan en null hasta
-        # que el upsert de más abajo cree la fila — no se recalculan después.
+        # Se mostró el formulario de contacto (cédula no encontrada, o
+        # encontrada pero sin correo/entidad) y la persona lo llenó: crea o
+        # actualiza su fila en `personal` ANTES de leer el roster de abajo,
+        # para que cargo/proceso ya reflejen lo recién confirmado en esta
+        # misma respuesta (no en la siguiente). Ver upsertar_personal().
+        if payload.nombre and (payload.cargo or payload.proceso or payload.entidad
+                                or payload.telefono or payload.correo):
+            await upsertar_personal(
+                con, int(payload.cedula), payload.nombre, payload.cargo,
+                payload.proceso, payload.entidad, payload.telefono, payload.correo,
+            )
+
+        # Roster real (RR.HH.) ya actualizado arriba si hacía falta: cargo/
+        # proceso/perfil profesional solo viajan al LLM si están en `personal`.
         roster = await con.fetchrow(
             "select cargo, proceso, perfil from personal where cedula = $1",
             int(payload.cedula),
+        )
+
+        # `area`/`perfil` de `respuestas` son columnas heredadas de la vieja
+        # clasificación asistencial/administrativo: ya no alimentan el prompt
+        # de IA (ver worker/prompt.py v2.0) ni el dashboard (agrupa por
+        # proceso, migración 007), pero siguen NOT NULL en el esquema — se
+        # completan aquí mismo con el mejor dato disponible del roster, sin
+        # pedírselo a la persona.
+        cargo_o_proceso = (roster["cargo"] if roster else None) or (roster["proceso"] if roster else None) or "Sin dato"
+        perfil = (
+            "asistencial"
+            if roster and roster["proceso"] and roster["proceso"] in AREAS_ASISTENCIALES
+            else "administrativo"
         )
 
         identidad_id = await con.fetchval(
@@ -378,36 +402,19 @@ async def recibir(payload: RespuestaIn):
             on conflict (identidad_id, campana) do nothing
             returning id
             """,
-            identidad_id, cfg.campana, payload.area, perfil, payload.texto,
+            identidad_id, cfg.campana, cargo_o_proceso, perfil, payload.texto,
             roster["cargo"] if roster else None,
             roster["proceso"] if roster else None,
             roster["perfil"] if roster else None,
         )
 
-    # Mismo upsert que /v1/asistencia: si la cédula ya está en `personal`
-    # (encontrada por el lookup), `on conflict do nothing` no toca nada. Si
-    # no estaba, completa el roster con lo que se recogió en el formulario
-    # de contacto, marcada 'autorregistro'. Sin bandera `encontrado` aquí:
-    # intentarlo siempre es seguro porque es idempotente.
-    if payload.nombre and payload.area:
-        await p.execute(
-            """
-            insert into personal (cedula, nombre_completo, area, proceso, telefono, origen)
-            values ($1, $2, $3, $4, $5, 'autorregistro')
-            on conflict (cedula) do nothing
-            """,
-            int(payload.cedula), payload.nombre, payload.area,
-            payload.servicio, payload.telefono,
-        )
-
     # Doble clic, reenvío por mala señal o "lo llené dos veces": lo resuelve la
     # restricción única, no lógica de aplicación.
     if respuesta_id is None:
-        log.info("respuesta duplicada ignorada area=%s", payload.area)
+        log.info("respuesta duplicada ignorada cedula=%s", payload.cedula)
         return {"ok": True, "duplicado": True}
 
-    log.info("respuesta encolada id=%s area=%s perfil=%s",
-             respuesta_id, payload.area, perfil)
+    log.info("respuesta encolada id=%s perfil=%s", respuesta_id, perfil)
     return {"ok": True, "duplicado": False, "id": str(respuesta_id)}
 
 
@@ -667,8 +674,9 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
     — eso sigue siendo confidencial incluso para el panel de jefes.
 
     Se cruza con `personal` (por cédula) para traer el perfil completo del
-    roster — cargo, servicio (`proceso`), perfil profesional, contacto — sin
-    duplicar esos datos dentro de `respuestas`. Funciona igual para alguien
+    roster — cargo, servicio (`proceso`), perfil profesional, entidad,
+    contacto — sin duplicar esos datos dentro de `respuestas`. Funciona igual
+    para alguien
     verificado por RR.HH. y para un autorregistro (`personal.origen`), porque
     ambos casos ya completan `personal` (ver /v1/asistencia y /v1/respuestas).
     Nota: `p.perfil` (cargo profesional tipo "Auxiliar de Enfermería") no es
@@ -690,7 +698,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
              where r.campana = $1
         )
         select b.*, pe.cargo, pe.proceso as servicio,
-               pe.perfil as perfil_profesional, pe.telefono,
+               pe.perfil as perfil_profesional, pe.entidad, pe.telefono,
                pe.email_institucional, pe.email_secundario, pe.origen as origen_personal
           from base b
           left join personal pe on pe.cedula = b.cedula::bigint
@@ -729,6 +737,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "cargo": f["cargo"],
             "servicio": f["servicio"],
             "perfil_profesional": f["perfil_profesional"],
+            "entidad": f["entidad"],
             "telefono": f["telefono"],
             "email_institucional": f["email_institucional"],
             "email_secundario": f["email_secundario"],

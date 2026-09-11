@@ -37,12 +37,33 @@ un diagnóstico real donde seis componentes en nivel 3 se veían todos como
 expectativa de que muchas respuestas reales se escriban con poco tiempo o
 cansancio (turnos largos) — no se les debe exigir la misma elaboración que
 a una respuesta escrita con calma para que cuente igual.
+
+v2.0 (2026-09-11): quita Perfil/Área (asistencial/administrativo) como regla
+dura — el roster nuevo de RR.HH. (`base datos reinduccion.xlsx`) ya no trae
+esa clasificación binaria, solo cargo/servicio/perfil profesional reales. El
+modelo ahora infiere el contacto con paciente a partir de esos tres datos
+(basta con que llegue uno solo), y si ninguno llega, del propio texto de la
+persona. `respuestas.perfil`/`personal.area` se siguen llenando en la base
+(no rompe v_agregado_area ni el historial), pero el worker ya no los usa
+para decidir la regla dura. No comparable con diagnósticos v1.x.
+
+v2.1 (2026-09-11): al comparar gpt-4o-mini (nueva ruta principal de pago)
+contra las rutas gratuitas con el mismo texto de prueba, ambos modelos
+dudaban entre nivel 2 y 3 ante prácticas cortas pero propias del rol, y C7
+llegó a 0 en una corrida de cada modelo pese a evidencia real de
+documentación. No era un modelo más estricto que otro: la rúbrica no traía
+un ejemplo trabajado que ancle esa distinción. Se agregó (ver
+prompts/rubrica.v1.md r5->r6) un ejemplo trabajado nivel 2 vs. 3 genérico
+por proceso, y se reforzó el bullet de "Disciplina documental" en C7 (ver
+prompts/componentes_cultura.v1.md) con ejemplos de documentación de
+cualquier proceso — clínico, administrativo, de apoyo — no solo notas de
+enfermería.
 """
 
 from pathlib import Path
 
-PROMPT_VERSION = "v1.10"
-RUBRICA_VERSION = "r5"
+PROMPT_VERSION = "v2.1"
+RUBRICA_VERSION = "r6"
 
 _DIR = Path(__file__).resolve().parents[2] / "prompts"
 COMPONENTES = (_DIR / "componentes_cultura.v1.md").read_text(encoding="utf-8")
@@ -64,32 +85,36 @@ una devolución constructiva anclada en la cultura institucional.
 
 # Perfil de quien responde
 
-Perfil: {{PERFIL}}
-Área: {{AREA}}
 Cargo: {{CARGO}}
-Servicio: {{SERVICIO}}
+Servicio/proceso: {{SERVICIO}}
 Perfil profesional: {{PERFIL_PROFESIONAL}}
 
-Cargo/servicio/perfil profesional pueden venir vacíos (persona autorregistrada,
-sin fila todavía en el roster de RR.HH.) — en ese caso ignóralos y usa solo
-Perfil/Área. Cuando sí vienen, úsalos para que "proximo_paso" sea específico a
-ESE servicio (ej. "en tu turno en Urgencias" en vez de "en tu área asistencial")
-— pero Perfil/Área siguen siendo lo que decide las reglas duras de abajo, nunca
-el cargo o servicio.
+Cualquiera de estos tres datos puede venir vacío (persona autorregistrada, o
+el roster de RR.HH. no tiene el campo diligenciado). Usa los que SÍ estén
+disponibles — con solo uno ya es suficiente contexto real, no necesitas los
+tres — para inferir con criterio si esta persona tiene contacto directo con
+pacientes (clínico/asistencial) o no (administrativo/apoyo), y ajusta tu
+evaluación y "proximo_paso" a ese contexto real:
 
-Esto condiciona TODA tu evaluación y tu recomendación:
-
-- Perfil "asistencial": tiene contacto directo con pacientes. Le aplican rondas
-  de seguridad, higiene de manos, identificación del paciente, trato al usuario
-  y su familia.
-- Perfil "administrativo": NO tiene contacto directo con pacientes. NUNCA le
-  sugieras rondas de seguridad, lavado de manos clínico ni protocolos
+- Si el cargo/proceso/perfil profesional indica contacto directo con
+  pacientes (ej. médico, enfermería, terapia, auxiliar de enfermería,
+  camillero, en un servicio clínico) — le aplican rondas de seguridad,
+  higiene de manos, identificación del paciente, trato al usuario y su
+  familia.
+- Si indica un rol sin contacto directo con pacientes (ej. facturación,
+  contabilidad, jurídica, talento humano, vigilancia, mantenimiento) — NUNCA
+  le sugieras rondas de seguridad, lavado de manos clínico ni protocolos
   asistenciales. Para este perfil, "seguridad" significa integridad y
   trazabilidad de la información, cumplimiento de plazos que impactan la
   atención, y calidad de los datos con que otros deciden. "Humanización"
   significa el trato con compañeros, proveedores y usuarios internos.
+- Si NINGUNO de los tres datos está disponible, infiere del propio texto de
+  la persona (menciona pacientes, turnos, historias clínicas vs. facturas,
+  proveedores, sistemas) o mantente en un terreno neutral que aplique a
+  cualquier colaborador, sin asumir contacto clínico.
 
-Una recomendación imposible de ejecutar en su área invalida todo el diagnóstico.
+Una recomendación imposible de ejecutar en su rol real invalida todo el
+diagnóstico.
 
 # Los 7 componentes le aplican a cualquier persona, tenga o no evidencia
 
@@ -235,8 +260,6 @@ def construir_mensajes(
         SISTEMA
         .replace("{{COMPONENTES}}", COMPONENTES)
         .replace("{{RUBRICA}}", RUBRICA)
-        .replace("{{PERFIL}}", perfil)
-        .replace("{{AREA}}", area)
         .replace("{{CARGO}}", cargo or "(sin dato)")
         .replace("{{SERVICIO}}", servicio or "(sin dato)")
         .replace("{{PERFIL_PROFESIONAL}}", perfil_profesional or "(sin dato)")

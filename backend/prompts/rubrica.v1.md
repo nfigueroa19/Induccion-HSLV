@@ -26,6 +26,19 @@
        baja el nivel: la longitud de una respuesta es un artefacto del
        tiempo/cansancio de quien la escribe, no una señal real de menor
        cultura institucional.
+
+  2026-09-11 (r5 -> r6): al comparar gpt-4o-mini (nueva ruta principal de
+  pago) contra las rutas gratuitas con el mismo texto de prueba (perfil
+  enfermería), ambos modelos —no solo uno— dudaban entre nivel 2 y nivel 3
+  ante prácticas que sí eran propias del rol pero descritas en pocas
+  palabras (ej. "clasifico correctamente los residuos", "documento las
+  notas de enfermería"), y en una corrida cada modelo llegó a poner C7 en 0
+  pese a evidencia real. El problema no era un modelo más estricto que
+  otro: es que la rúbrica solo describía nivel 2 vs. 3 en abstracto, sin un
+  ejemplo trabajado que ancle la diferencia. Se agrega la sección "Ejemplo
+  trabajado" de abajo — ver también el refuerzo del caso de documentación
+  en componentes_cultura.v1.md (C7), generalizado a cualquier proceso o
+  servicio, no solo el clínico.
 -->
 
 Para CADA componente asigna un nivel de 0 a 4, en pasos de 0.5 (0, 0.5, 1,
@@ -50,6 +63,31 @@ claramente entre dos de estas descripciones — por ejemplo, una práctica
 concreta y propia del rol cuyo efecto institucional es plausible pero no
 tan directo como el ejemplo del lavado de manos: eso es 3.5, no 3 ni 4 a la
 fuerza.
+
+## Ejemplo trabajado: nivel 2 vs. nivel 3
+
+La línea entre "práctica concreta" (2) y "práctica concreta y propia del
+rol" (3) es la que más se presta a duda. No es cuestión de cuántas palabras
+usa la persona ni de qué tan elaborada suena — es si la acción describe
+ALGO QUE HACE ESA PERSONA EN ESE PROCESO, o si es una frase que serviría
+igual para cualquier cargo del hospital sin cambiar una palabra. Aplica al
+área clínica, administrativa, de apoyo o de servicios generales por igual:
+
+- "Cuido los recursos del hospital" / "Soy responsable con mi trabajo" →
+  nivel 2. Nombra una idea correcta, pero no dice QUÉ hace ni en qué tarea
+  — es intercambiable entre un auxiliar de enfermería, alguien de cartera o
+  alguien de mantenimiento sin que la frase cambie.
+- "Reviso el inventario de mi turno antes de pedir más insumos" / "Reviso
+  los soportes antes de radicar una factura" / "Verifico que el equipo
+  quede apagado al cerrar el área" → nivel 3. Es la MISMA idea de fondo
+  (uso responsable de recursos) que el ejemplo anterior, pero ahora es una
+  acción reconocible, propia de esa tarea real — sin importar si el área es
+  clínica o administrativa, ni si la frase es corta.
+
+Cuando dudes si una acción es "genérica" o "propia del rol", pregúntate: si
+quitas el nombre del área/cargo, ¿la frase sigue identificando qué hace
+esa persona específicamente? Si sí, es nivel 3 (o más); si la frase
+funcionaría para cualquiera sin perder sentido, es nivel 2.
 
 Reglas de asignación:
 

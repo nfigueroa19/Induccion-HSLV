@@ -19,8 +19,8 @@ const resumenTotal = document.getElementById('resumen-total');
 const resumenListos = document.getElementById('resumen-listos');
 const resumenPromedio = document.getElementById('resumen-promedio');
 const filtroBusqueda = document.getElementById('filtro-busqueda');
-const filtroArea = document.getElementById('filtro-area');
 const filtroProceso = document.getElementById('filtro-proceso');
+const filtroEntidad = document.getElementById('filtro-entidad');
 const filtroEstado = document.getElementById('filtro-estado');
 const filtroPct = document.getElementById('filtro-pct');
 
@@ -65,8 +65,8 @@ async function cargar() {
 
     const json = await r.json();
     datos = json.respuestas;
-    poblarFiltroArea();
     poblarFiltroProceso();
+    poblarFiltroEntidad();
     dibujar();
   } catch {
     cargandoTabla.textContent = 'No se pudo cargar la información. Intenta recargar la página.';
@@ -74,18 +74,6 @@ async function cargar() {
   }
 }
 cargar();
-
-function poblarFiltroArea() {
-  if (filtroArea.dataset.poblado) return;
-  const areas = [...new Set(datos.map((d) => d.area))].sort();
-  areas.forEach((a) => {
-    const op = document.createElement('option');
-    op.value = a;
-    op.textContent = a;
-    filtroArea.appendChild(op);
-  });
-  filtroArea.dataset.poblado = '1';
-}
 
 // Proceso (personal.proceso, columna "servicio" en la respuesta) sí se presta
 // para un desplegable como área: son valores del roster de RR.HH., no texto
@@ -104,7 +92,23 @@ function poblarFiltroProceso() {
   filtroProceso.dataset.poblado = '1';
 }
 
-[filtroBusqueda, filtroArea, filtroProceso, filtroEstado, filtroPct].forEach((el) =>
+// Entidad (personal.entidad: la empresa/cooperativa que contrata a la
+// persona, ej. SSC, ASIES, HSLV directo) — dato nuevo del roster de RR.HH.
+// de julio 2026, mismo criterio que proceso: valores cerrados del roster,
+// se prestan para un desplegable.
+function poblarFiltroEntidad() {
+  if (filtroEntidad.dataset.poblado) return;
+  const entidades = [...new Set(datos.map((d) => d.entidad).filter(Boolean))].sort();
+  entidades.forEach((ent) => {
+    const op = document.createElement('option');
+    op.value = ent;
+    op.textContent = ent;
+    filtroEntidad.appendChild(op);
+  });
+  filtroEntidad.dataset.poblado = '1';
+}
+
+[filtroBusqueda, filtroProceso, filtroEntidad, filtroEstado, filtroPct].forEach((el) =>
   el.addEventListener('input', dibujar));
 
 function filtrar() {
@@ -112,17 +116,17 @@ function filtrar() {
   const pct = filtroPct.value;
 
   const filas = datos.filter((d) => {
-    if (filtroArea.value && d.area !== filtroArea.value) return false;
     if (filtroProceso.value && d.servicio !== filtroProceso.value) return false;
+    if (filtroEntidad.value && d.entidad !== filtroEntidad.value) return false;
     if (filtroEstado.value && d.estado !== filtroEstado.value) return false;
     // Busca en todas las columnas de texto visibles, no solo nombre/cédula:
     // con 6 columnas ya no alcanza con dos campos, y un jefe de servicio
     // puede no saber en qué columna exacta está el dato que recuerda (p.ej.
-    // escribe "biomédica" sin saber si es el área, el proceso o el perfil).
+    // escribe "biomédica" sin saber si es el cargo, el proceso o el perfil).
     // Se compara palabra por palabra (todas deben aparecer, en cualquier
     // orden) para que "diego castro" encuentre "Diego Felipe Castro Jordán".
     if (q) {
-      const bolsa = `${d.nombre} ${d.cedula} ${d.area} ${d.cargo || ''} ${d.servicio || ''} ${d.perfil_profesional || ''}`.toLowerCase();
+      const bolsa = `${d.nombre} ${d.cedula} ${d.cargo || ''} ${d.servicio || ''} ${d.perfil_profesional || ''} ${d.entidad || ''}`.toLowerCase();
       const palabras = q.split(/\s+/).filter(Boolean);
       if (!palabras.every((palabra) => bolsa.includes(palabra))) return false;
     }
@@ -167,10 +171,10 @@ function dibujar() {
     tr.innerHTML = `
       <td>${escapar(d.nombre)}</td>
       <td>${escapar(d.cedula)}</td>
-      <td>${escapar(d.area)}</td>
       <td>${escapar(d.cargo || '—')}</td>
       <td>${escapar(d.servicio || '—')}</td>
       <td>${escapar(d.perfil_profesional || '—')}</td>
+      <td>${escapar(d.entidad || '—')}</td>
       <td><span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span></td>
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
       <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>

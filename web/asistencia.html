@@ -32,6 +32,7 @@
     <div class="wordmark">
       <div class="name">Hospital Susana López de Valencia E.S.E.</div>
       <div class="sub">Registro de asistencia</div>
+      <div class="sub">Memoria, Huella e Identidad</div>
     </div>
   </div>
 
@@ -53,7 +54,9 @@
       <p class="status" id="status" role="status"></p>
     </form>
 
-    <!-- Solo aparece si la cédula no está en el roster `personal`. -->
+    <!-- Aparece si la cédula no está en `personal`, o si está pero le falta
+         correo o entidad — en ese caso se precarga con lo que ya se sabe y
+         al enviarla reemplaza esos datos en `personal`. -->
     <form id="form-contacto" autocomplete="off" hidden>
       <div class="field">
         <label for="nombre">Nombre(s) y Apellidos</label>
@@ -71,19 +74,27 @@
       </div>
 
       <div class="field">
-        <label for="area">Área</label>
-        <select id="area" name="area" autocomplete="off" required>
-          <option value="" disabled selected>Selecciona tu área</option>
+        <label for="cargo">Cargo</label>
+        <select id="cargo" name="cargo" autocomplete="off" required>
+          <option value="" disabled selected>Selecciona tu cargo</option>
         </select>
-        <input type="text" id="area-otra" name="area-otra" placeholder="Escribe tu área" autocomplete="off" hidden />
+        <input type="text" id="cargo-otra" name="cargo-otra" placeholder="Escribe tu cargo" autocomplete="off" hidden />
       </div>
 
       <div class="field">
-        <label for="servicio">Servicio</label>
-        <select id="servicio" name="servicio" autocomplete="off" required disabled>
-          <option value="" disabled selected>Primero selecciona tu área</option>
+        <label for="proceso">Proceso</label>
+        <select id="proceso" name="proceso" autocomplete="off" required>
+          <option value="" disabled selected>Selecciona tu proceso</option>
         </select>
-        <input type="text" id="servicio-otra" name="servicio-otra" placeholder="Escribe tu servicio" autocomplete="off" hidden />
+        <input type="text" id="proceso-otra" name="proceso-otra" placeholder="Escribe tu proceso" autocomplete="off" hidden />
+      </div>
+
+      <div class="field">
+        <label for="entidad">Entidad / Sindicato</label>
+        <select id="entidad" name="entidad" autocomplete="off" required>
+          <option value="" disabled selected>Selecciona tu entidad</option>
+        </select>
+        <input type="text" id="entidad-otra" name="entidad-otra" placeholder="Escribe tu entidad" autocomplete="off" hidden />
       </div>
 
       <button class="submit" type="submit">Continuar</button>
@@ -93,7 +104,7 @@
 
 </div>
 
-<script src="js/asistencia.js?v=20260907c"></script>
+<script src="js/asistencia.js?v=20260911a"></script>
 <script src="js/splash.js"></script>
 </body>
 </html>

@@ -22,12 +22,22 @@ const status = document.getElementById('status');
 const btnCedula = document.getElementById('btn-cedula');
 
 const formContacto = document.getElementById('form-contacto');
-const selectArea = document.getElementById('area');
-const selectServicio = document.getElementById('servicio');
-const inputAreaOtra = document.getElementById('area-otra');
-const inputServicioOtra = document.getElementById('servicio-otra');
+const inputNombreContacto = document.getElementById('nombre');
+const inputCorreoContacto = document.getElementById('correo');
+const selectCargo = document.getElementById('cargo');
+const selectProceso = document.getElementById('proceso');
+const selectEntidad = document.getElementById('entidad');
+const inputCargoOtra = document.getElementById('cargo-otra');
+const inputProcesoOtra = document.getElementById('proceso-otra');
+const inputEntidadOtra = document.getElementById('entidad-otra');
 const inputTelefono = document.getElementById('telefono');
 const statusContacto = document.getElementById('status-contacto');
+
+// Si la cédula sí está en `personal` pero le faltaba correo/entidad, el
+// formulario de contacto igual se muestra — esto distingue ese caso (true)
+// del de cédula realmente nueva (false) para el campo `encontrado` que se
+// manda a /v1/asistencia.
+let cedulaExistente = false;
 
 inputTelefono.addEventListener('input', () => {
   inputTelefono.value = inputTelefono.value.replace(/\D/g, '');
@@ -35,11 +45,9 @@ inputTelefono.addEventListener('input', () => {
 
 fetch(`${API}/healthz`).catch(() => {});
 
-let catalogo = {};
-
-// Catálogo derivado de `personal` (ver /v1/areas): primera versión sobre
-// datos sin del todo curados. "Otra..." deja escribir libre lo que no
-// calce, para poder corregir el catálogo con datos reales más adelante.
+// Catálogo derivado en vivo de `personal` (ver /v1/catalogos): cargo,
+// proceso y entidad ya presentes en el roster. "Otra..." deja escribir
+// libre lo que no calce, para ir corrigiendo el catálogo con datos reales.
 const OTRA = '__otra__';
 
 function agregarOpcionOtra(select) {
@@ -49,77 +57,66 @@ function agregarOpcionOtra(select) {
   select.appendChild(opt);
 }
 
-async function cargarAreas() {
-  try {
-    const r = await fetch(`${API}/v1/areas`);
-    if (!r.ok) return;
-    ({ catalogo } = await r.json());
+// Un <select> + su <input> "otra" hermano: llena el select con `valores`,
+// agrega "Otra...", y cablea el toggle entre uno y otro. `valorPrevio` (del
+// lookup por cédula) precarga la opción si existe en el catálogo, o activa
+// directamente el modo texto libre si no.
+function prepararSelector(select, inputOtra, valores, valorPrevio) {
+  for (const v of valores) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  }
+  agregarOpcionOtra(select);
 
-    for (const [area, servicios] of Object.entries(catalogo)) {
-      if (servicios.length === 0) continue;
-      const opt = document.createElement('option');
-      opt.value = area;
-      opt.textContent = area;
-      selectArea.appendChild(opt);
+  select.addEventListener('change', () => {
+    const esOtra = select.value === OTRA;
+    inputOtra.hidden = !esOtra;
+    inputOtra.required = esOtra;
+    if (esOtra) inputOtra.focus();
+    else inputOtra.value = '';
+  });
+
+  if (valorPrevio) {
+    if (valores.includes(valorPrevio)) {
+      select.value = valorPrevio;
+    } else {
+      select.value = OTRA;
+      inputOtra.hidden = false;
+      inputOtra.required = true;
+      inputOtra.value = valorPrevio;
     }
-    agregarOpcionOtra(selectArea);
-  } catch {
-    // Sin conexión: el formulario de contacto solo queda sin opciones de
-    // área/servicio, no bloquea el resto de la prueba.
   }
 }
-cargarAreas();
 
-selectArea.addEventListener('change', () => {
-  if (selectArea.value === OTRA) {
-    inputAreaOtra.hidden = false;
-    inputAreaOtra.required = true;
-    inputAreaOtra.focus();
+let catalogosCargados = null;
 
-    // Sin área real no hay catálogo de servicios que ofrecer: se pasa
-    // directo a texto libre también para servicio.
-    selectServicio.hidden = true;
-    selectServicio.required = false;
-    selectServicio.disabled = true;
-    inputServicioOtra.hidden = false;
-    inputServicioOtra.required = true;
-    return;
+async function cargarCatalogos() {
+  if (catalogosCargados) return catalogosCargados;
+  try {
+    const r = await fetch(`${API}/v1/catalogos`);
+    if (!r.ok) return null;
+    catalogosCargados = await r.json();
+    return catalogosCargados;
+  } catch {
+    // Sin conexión: el formulario de contacto queda con los selects vacíos
+    // (solo "Otra..."), no bloquea el resto del registro.
+    return null;
   }
+}
 
-  inputAreaOtra.hidden = true;
-  inputAreaOtra.required = false;
-  inputAreaOtra.value = '';
-  selectServicio.hidden = false;
-  selectServicio.required = true;
-
-  selectServicio.innerHTML = '';
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Selecciona tu servicio';
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  selectServicio.appendChild(placeholder);
-
-  for (const servicio of catalogo[selectArea.value] || []) {
-    const opt = document.createElement('option');
-    opt.value = servicio;
-    opt.textContent = servicio;
-    selectServicio.appendChild(opt);
-  }
-  agregarOpcionOtra(selectServicio);
-  selectServicio.disabled = false;
-});
-
-selectServicio.addEventListener('change', () => {
-  const esOtra = selectServicio.value === OTRA;
-  inputServicioOtra.hidden = !esOtra;
-  inputServicioOtra.required = esOtra;
-  if (esOtra) {
-    inputServicioOtra.focus();
-  } else {
-    inputServicioOtra.value = '';
-  }
-});
+// Arma los tres selects justo antes de mostrar el formulario de contacto
+// (no al cargar la página), para poder precargarlos con lo que ya sabe el
+// lookup de la cédula (cargo/proceso/entidad si la persona ya está en
+// `personal` pero le falta correo o entidad).
+async function prepararFormularioContacto(previo) {
+  const cat = (await cargarCatalogos()) || { cargos: [], procesos: [], entidades: [] };
+  prepararSelector(selectCargo, inputCargoOtra, cat.cargos, previo?.cargo);
+  prepararSelector(selectProceso, inputProcesoOtra, cat.procesos, previo?.proceso);
+  prepararSelector(selectEntidad, inputEntidadOtra, cat.entidades, previo?.entidad);
+  inputNombreContacto.value = previo?.nombre || '';
+}
 
 // Barrera rápida en el mismo navegador: no evita incógnito/otro navegador
 // (para eso está el bloqueo por MAC en el backend), pero corta el reintento
@@ -176,9 +173,9 @@ formCedula.addEventListener('submit', async (e) => {
     }
     const data = await r.json();
 
-    if (data.existe) {
+    if (data.existe && data.completo) {
       try {
-        await guardarAsistencia({ cedula: valor, encontrado: true, nombre: data.nombre, area: data.area });
+        await guardarAsistencia({ cedula: valor, encontrado: true, nombre: data.nombre });
         document.getElementById('grupo-cedula').hidden = true;
         btnCedula.hidden = true;
         hero.hidden = true;
@@ -194,9 +191,14 @@ formCedula.addEventListener('submit', async (e) => {
       return;
     }
 
+    // Cédula no encontrada, o encontrada pero sin correo/entidad: el
+    // formulario completo se precarga con lo que ya se sabe (si existe) y al
+    // enviarlo reemplaza esos datos en `personal`.
+    cedulaExistente = data.existe;
     inputCedula.disabled = true;
     btnCedula.hidden = true;
     status.textContent = 'Por favor, completa tus datos para continuar.';
+    await prepararFormularioContacto(data.existe ? data : null);
     formContacto.hidden = false;
     document.getElementById('nombre').focus();
   } catch {
@@ -206,14 +208,12 @@ formCedula.addEventListener('submit', async (e) => {
 
 formContacto.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const nombre = document.getElementById('nombre').value.trim();
-  const areaEsTexto = selectArea.value === OTRA;
-  const area = areaEsTexto ? inputAreaOtra.value.trim() : selectArea.value;
-  // Área "Otra..." deja sin catálogo al servicio (se oculta el <select> y
-  // se pasa directo a texto libre), así que ahí también se usa el texto.
-  const servicioEsTexto = areaEsTexto || selectServicio.value === OTRA;
-  const servicio = servicioEsTexto ? inputServicioOtra.value.trim() : selectServicio.value;
+  const nombre = inputNombreContacto.value.trim();
+  const correo = inputCorreoContacto.value.trim();
   const telefono = inputTelefono.value.trim();
+  const cargo = selectCargo.value === OTRA ? inputCargoOtra.value.trim() : selectCargo.value;
+  const proceso = selectProceso.value === OTRA ? inputProcesoOtra.value.trim() : selectProceso.value;
+  const entidad = selectEntidad.value === OTRA ? inputEntidadOtra.value.trim() : selectEntidad.value;
 
   // Al terminar (éxito o error) se deja la pantalla igual que el flujo de
   // cédula encontrada: solo el mensaje final en #status, nada de #grupo-cedula
@@ -226,8 +226,8 @@ formContacto.addEventListener('submit', async (e) => {
 
   try {
     await guardarAsistencia({
-      cedula: inputCedula.value.trim(), encontrado: false,
-      nombre, area, servicio, telefono,
+      cedula: inputCedula.value.trim(), encontrado: cedulaExistente,
+      nombre, cargo, proceso, entidad, telefono, correo,
     });
     mostrarSoloMensajeFinal();
     status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';

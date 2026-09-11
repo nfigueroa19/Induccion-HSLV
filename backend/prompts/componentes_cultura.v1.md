@@ -13,6 +13,15 @@
     - Segundo Cerebro/05 - Motor IA/Documentacion institucional/_index.md
     - Segundo Cerebro/00 - Proyecto/Origen del proyecto.md
   Diseño: Segundo Cerebro/05 - Motor IA/System Prompt - Diagnostico ADN Susana.md
+
+  2026-09-11: reforzado el bullet de "Disciplina documental" en C7 — el
+  contenido institucional original hablaba en términos gerenciales
+  (indicadores, PHVA, planes de mejoramiento) y ni gpt-4o-mini ni las rutas
+  gratuitas conectaban con eso una respuesta simple como "documento mis
+  notas de enfermería a tiempo". Se agregaron ejemplos concretos de
+  documentación de cualquier proceso (clínico, administrativo, de apoyo),
+  para que cuente como evidencia de C7 sin depender del vocabulario
+  institucional exacto. Ver también rubrica.v1.md (r5 -> r6).
 -->
 
 ## C1 — Somos universitarios
@@ -186,6 +195,17 @@ transformación integral".
 - **Disciplina documental**: registro oportuno y veraz de evidencias, planes
   de mejoramiento y trazabilidad de compromisos; usa indicadores de gestión y
   tableros de control (semáforos) para tomar decisiones con evidencia.
+  Documentar el propio trabajo con claridad y a tiempo YA ES esta
+  competencia, sin importar el proceso o servicio — no hace falta que la
+  persona mencione "PHVA" ni "indicadores" para que cuente. Notas de
+  enfermería, evolución en la historia clínica, actas de comité, radicación
+  de una factura, bitácora de mantenimiento, registro de entrada/salida de
+  insumos en almacén, un ticket de soporte cerrado con su solución, un
+  reporte de novedades de vigilancia: todo esto es evidencia de C7 si la
+  persona lo describe como algo que hace de forma clara/oportuna/completa.
+  Nivel 3 si solo describe el registro; sube a 3.5-4 si además se nombra o
+  se infiere para qué sirve ese registro (quién lo usa después, qué decisión
+  o continuidad depende de que quedara bien hecho).
 - **Herramientas institucionales**: Sistema Único de Acreditación (SUA) y
   Camino a la Excelencia, PAMEC (Programa de Auditoría para el Mejoramiento
   Continuo de la Calidad), matrices de riesgo, planes de mejoramiento.
