@@ -80,7 +80,15 @@ def catalogo() -> list[Proveedor]:
             base_url=OPENAI_URL,
             api_key=cfg.openai_api_key,
             modelo="gpt-4o-mini",
-            rpm=60,                # conservador frente al límite real de tier 1
+            # El techo real no es RPM (500 en Tier 1) sino TPM (200,000):
+            # cada diagnóstico pesa ~6,980 tokens (~6,080 de prompt tras
+            # quitar los comentarios de historial de prompts/*.md + 900 de
+            # max_tokens), así que 200,000/6,980 ≈ 28.6 req/min es el techo
+            # real. 25 deja margen de seguridad y evita que el router dispare
+            # ráfagas que igual van a chocar con el 429 real (probado
+            # 2026-09-14: con rpm=60 el burst de 50 truena a partir de la
+            # ~28-30, en cascada arrastra también a groq/mistral/sambanova).
+            rpm=25,
             prioridad=1,
         ))
 

@@ -316,6 +316,13 @@ button.submit:focus-visible { outline: 2px solid var(--color-accent); outline-of
   margin-top: 24px;
 }
 
+.status-wifi {
+  font-size: 13px;
+  text-align: center;
+  margin-top: 14px;
+  color: var(--color-ink-soft);
+}
+
 button.submit[disabled] {
   opacity: 0.55;
   cursor: default;

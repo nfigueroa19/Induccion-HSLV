@@ -667,6 +667,19 @@ async def admin_login(payload: LoginIn):
     return {"token": _firmar_token(payload.usuario)}
 
 
+@app.get("/v1/admin/verificar")
+async def admin_verificar(usuario: str = Depends(admin_actual)):
+    """Solo confirma que el token de sesión es válido, sin traer datos —
+    la usa `asistencia.js` en el dominio público (Cloudflare Pages) para
+    exigir login antes de mostrar el formulario: contingencia para cuando la
+    Raspberry Pi no está disponible el día del evento. En la Pi (LAN aislada)
+    no hace falta, ahí el WiFi mismo es el control de acceso."""
+    return JSONResponse(
+        content={"ok": True},
+        headers={"X-Session-Token": _firmar_token(usuario)},
+    )
+
+
 @app.get("/v1/admin/respuestas")
 async def admin_respuestas(usuario: str = Depends(admin_actual)):
     """Asistencia y diagnóstico por persona: nombre, cédula, área, estado,

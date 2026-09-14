@@ -15,6 +15,35 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
   ? `http://${location.hostname}:8000`
   : 'https://induccion-hslv-api.onrender.com';
 
+// En la Pi (LAN aislada "InduccionHSLV") o en local, el WiFi mismo es el
+// control de acceso — no hace falta login. En el dominio público de
+// Cloudflare Pages (contingencia si la Pi falla el día del evento) cualquiera
+// con el link llegaría directo aquí, así que se exige la misma sesión del
+// panel de jefes (ver login.js/gestion-interna.js) antes de mostrar el
+// formulario.
+const esLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || esIPLocal;
+
+if (!esLocal) {
+  const tokenSesion = sessionStorage.getItem('admin_token');
+  if (!tokenSesion) {
+    location.replace('/login');
+    throw new Error('sin sesión');
+  }
+  // El token en sessionStorage no basta por sí solo (cualquiera podría poner
+  // un valor cualquiera ahí) — se confirma contra el backend; si no es
+  // válido, se corta la sesión y se manda de vuelta al login.
+  fetch(`${API}/v1/admin/verificar`, { headers: { Authorization: `Bearer ${tokenSesion}` } })
+    .then((r) => {
+      if (!r.ok) throw new Error();
+      const nuevoToken = r.headers.get('X-Session-Token');
+      if (nuevoToken) sessionStorage.setItem('admin_token', nuevoToken);
+    })
+    .catch(() => {
+      sessionStorage.removeItem('admin_token');
+      location.replace('/login');
+    });
+}
+
 const hero = document.querySelector('.hero');
 const formCedula = document.getElementById('form-asistencia');
 const inputCedula = document.getElementById('cedula');
@@ -32,6 +61,16 @@ const inputProcesoOtra = document.getElementById('proceso-otra');
 const inputEntidadOtra = document.getElementById('entidad-otra');
 const inputTelefono = document.getElementById('telefono');
 const statusContacto = document.getElementById('status-contacto');
+const statusWifi = document.getElementById('status-wifi');
+
+// Solo se llama en los finales reales de un dispositivo (registrado con
+// éxito, o bloqueado por MAC): "InduccionHSLV" no tiene salida a internet
+// (ver Segundo Cerebro/03 - Minutas/2026-09-02), así que quien no se
+// desconecte se queda sin datos hasta que lo note por su cuenta.
+function mostrarRecordatorioWifi() {
+  statusWifi.hidden = false;
+  statusWifi.textContent = 'Recuerda desconectarte de "InduccionHSLV" al salir — esta red no tiene internet.';
+}
 
 // Si la cédula sí está en `personal` pero le faltaba correo/entidad, el
 // formulario de contacto igual se muestra — esto distingue ese caso (true)
@@ -132,6 +171,7 @@ if (localStorage.getItem(CLAVE_LOCAL)) {
   status.textContent = 'Ya registraste tu asistencia desde este navegador. ¡Gracias!';
   status.classList.add('status-grande');
   hero.hidden = true;
+  mostrarRecordatorioWifi();
 }
 
 async function guardarAsistencia(datos) {
@@ -142,7 +182,12 @@ async function guardarAsistencia(datos) {
   });
   if (r.status === 409) {
     const err = await r.json().catch(() => ({}));
-    throw new Error(err.detail || 'Este dispositivo ya registró otra cédula.');
+    const error = new Error(err.detail || 'Este dispositivo ya registró otra cédula.');
+    // Distingue el bloqueo real (fin del camino para este dispositivo) de
+    // una falla recuperable (Supabase caído, timeout, etc.): solo el
+    // primero justifica cerrar el formulario y avisar que se desconecte.
+    error.bloqueado = true;
+    throw error;
   }
   if (!r.ok) {
     throw new Error('No pudimos guardar tu asistencia. Intenta de nuevo.');
@@ -181,12 +226,20 @@ formCedula.addEventListener('submit', async (e) => {
         hero.hidden = true;
         status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
         status.classList.add('status-grande');
+        mostrarRecordatorioWifi();
       } catch (err) {
-        document.getElementById('grupo-cedula').hidden = true;
-        btnCedula.hidden = true;
-        hero.hidden = true;
-        status.textContent = err.message;
-        status.classList.add('status-grande');
+        if (err.bloqueado) {
+          document.getElementById('grupo-cedula').hidden = true;
+          btnCedula.hidden = true;
+          hero.hidden = true;
+          status.textContent = err.message;
+          status.classList.add('status-grande');
+          mostrarRecordatorioWifi();
+        } else {
+          // Falla recuperable: deja la cédula visible para reintentar, sin
+          // el aviso de WiFi (todavía no terminó de registrarse).
+          status.textContent = err.message;
+        }
       }
       return;
     }
@@ -232,9 +285,18 @@ formContacto.addEventListener('submit', async (e) => {
     mostrarSoloMensajeFinal();
     status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
     status.classList.add('status-grande');
+    mostrarRecordatorioWifi();
   } catch (err) {
-    mostrarSoloMensajeFinal();
-    status.textContent = err.message;
-    status.classList.add('status-grande');
+    if (err.bloqueado) {
+      mostrarSoloMensajeFinal();
+      status.textContent = err.message;
+      status.classList.add('status-grande');
+      mostrarRecordatorioWifi();
+    } else {
+      // Falla recuperable: deja el formulario de contacto abierto para
+      // reintentar, con el error junto al botón, no en el #status de arriba
+      // (que sigue mostrando "Por favor, completa tus datos para continuar.").
+      statusContacto.textContent = err.message;
+    }
   }
 });

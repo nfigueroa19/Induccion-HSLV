@@ -1,0 +1,13 @@
+{
+  "name": "hslv-web-build",
+  "private": true,
+  "description": "Genera web/dist_pi/: copia de web/ minificada y sin comentarios, para llevar a la Raspberry Pi o subir a Cloudflare Pages en vez del código fuente crudo.",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
+    "terser": "^5.31.0"
+  }
+}

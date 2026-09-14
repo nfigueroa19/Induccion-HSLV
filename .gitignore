@@ -23,3 +23,11 @@ backend/groq_error*.txt
 
 # Cloudflare Pages: caché/estado local de `wrangler`, no es código fuente
 web/.wrangler/
+.wrangler/
+
+# Copia minificada/ofuscada solo para la Raspberry Pi (ver scp a ~/hslv-web)
+# — generada a partir de web/, no es fuente de verdad, no se versiona.
+web/dist_pi/
+
+# Dependencias de build.js (terser/clean-css/html-minifier-terser)
+web/node_modules/
