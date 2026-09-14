@@ -309,12 +309,16 @@ def render_html_diagnostico(diagnostico: dict) -> str:
 """
 
 
-async def enviar_diagnostico_email(destinatario: str, diagnostico: dict) -> bool:
+async def enviar_diagnostico_email(destinatario: str | list[str], diagnostico: dict) -> bool:
     """Envía el diagnóstico por correo. Devuelve False sin lanzar excepción
     si el envío no está configurado (RESEND_API_KEY vacío) — el flujo que
-    calcula el diagnóstico no debe romperse porque el correo falle."""
+    calcula el diagnóstico no debe romperse porque el correo falle.
+
+    `destinatario` acepta un solo correo o una lista (ej. institucional +
+    secundario de `personal`) — se manda un único correo con todos en "to"."""
+    destinatarios = [destinatario] if isinstance(destinatario, str) else destinatario
     if not cfg.resend_api_key:
-        log.warning("RESEND_API_KEY vacío: correo a %s no enviado", destinatario)
+        log.warning("RESEND_API_KEY vacío: correo a %s no enviado", destinatarios)
         return False
 
     html = render_html_diagnostico(diagnostico)
@@ -324,13 +328,13 @@ async def enviar_diagnostico_email(destinatario: str, diagnostico: dict) -> bool
             headers={"Authorization": f"Bearer {cfg.resend_api_key}"},
             json={
                 "from": cfg.resend_from,
-                "to": [destinatario],
+                "to": destinatarios,
                 "subject": "Tu diagnóstico ADN Susana",
                 "html": html,
             },
         )
     if resp.status_code >= 400:
-        log.error("Resend rechazó el envío a %s: %s %s", destinatario, resp.status_code, resp.text)
+        log.error("Resend rechazó el envío a %s: %s %s", destinatarios, resp.status_code, resp.text)
         return False
-    log.info("correo de diagnóstico enviado a %s", destinatario)
+    log.info("correo de diagnóstico enviado a %s", destinatarios)
     return True

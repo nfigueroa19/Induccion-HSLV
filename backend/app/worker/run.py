@@ -61,10 +61,11 @@ async def _enviar_correo_diagnostico(pool, respuesta_id, porcentaje, nivel, crud
     ya quedó 'listo' — el peor caso es que la persona no reciba el correo y
     solo vea el resultado en pantalla.
 
-    Prioridad de destinatario (decisión 2026-09-08, ver memoria
-    project-correo-diagnostico-resend): email_institucional -> email_secundario
-    (ambos de `personal`, el roster de RR.HH.) -> identidades.correo (lo que
-    la persona escribió en el formulario, si no está en el roster).
+    Destinatarios (decisión 2026-09-14): si la persona tiene email_institucional
+    y/o email_secundario en `personal` (el roster de RR.HH.), se manda a AMBOS
+    a la vez. Si no tiene ninguno de los dos ahí, se usa identidades.correo —
+    lo que la persona escribió a mano en el formulario (paso 1/2, cuando el
+    roster no trae correo y se le pide rellenarlo).
     """
     if cfg.campana == _CAMPANA_PRUEBA:
         log.info("campana=%s (prueba): correo de diagnóstico omitido para respuesta %s",
@@ -87,10 +88,11 @@ async def _enviar_correo_diagnostico(pool, respuesta_id, porcentaje, nivel, crud
         if fila is None:
             return
 
-        destinatario = (
-            fila["email_institucional"]
-            or fila["email_secundario"]
-            or fila["correo_identidad"]
+        del_roster = [
+            e for e in (fila["email_institucional"], fila["email_secundario"]) if e
+        ]
+        destinatario = del_roster or (
+            [fila["correo_identidad"]] if fila["correo_identidad"] else []
         )
         if not destinatario:
             log.info("respuesta %s sin correo de destino; no se envía diagnóstico",

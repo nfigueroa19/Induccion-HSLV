@@ -1,9 +1,7 @@
-# Rewrites para Render Static Site (mismo formato que Netlify).
-# 200 = rewrite: sirve el archivo destino manteniendo la URL visible limpia,
-# no es un redirect visible para quien navega.
-/dashboard         /dashboard.html         200
-/login             /login.html             200
-# Panel de jefes de servicio (antes vivía en /asistencia; se liberó ese
-# nombre para el registro de asistencia de colaboradores, ver más abajo).
-/gestion-interna   /gestion-interna.html   200
-/asistencia        /asistencia.html        200
+# Cloudflare Pages (plataforma activa desde 2026-09-08) ya sirve automática
+# y nativamente /dashboard, /login, /gestion-interna y /asistencia como URLs
+# limpias de sus .html correspondientes (sin necesidad de reglas explícitas)
+# — de hecho, agregar una regla 200 explícita para esos mismos paths choca
+# con ese comportamiento nativo y produce un bucle de redirección 308 sobre
+# sí mismo (encontrado y corregido 2026-09-14, ver minuta). Este archivo
+# queda vacío de reglas a propósito.
