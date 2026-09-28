@@ -25,9 +25,11 @@ backend/groq_error*.txt
 web/.wrangler/
 .wrangler/
 
-# Copia minificada/ofuscada solo para la Raspberry Pi (ver scp a ~/hslv-web)
-# — generada a partir de web/, no es fuente de verdad, no se versiona.
+# Copias minificadas/ofuscadas generadas por web/build.js — no son fuente de
+# verdad, no se versionan. dist_pi: scp a ~/hslv-web en la Raspberry Pi.
+# dist_cf: deploy a Cloudflare Pages (wrangler pages deploy dist_cf).
 web/dist_pi/
+web/dist_cf/
 
 # Dependencias de build.js (terser/clean-css/html-minifier-terser)
 web/node_modules/

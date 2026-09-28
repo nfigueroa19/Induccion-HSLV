@@ -8,6 +8,7 @@ import unicodedata
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import bcrypt
 import jwt
@@ -49,11 +50,54 @@ AREAS_ADMINISTRATIVAS = [
     "Servicios Generales", "Mantenimiento", "Subdirección Científica",
 ]
 
-# Correcciones puntuales de typos detectados en personal.proceso que la
-# deduplicación case-insensitive no atrapa por sí sola (letras de más/menos,
-# no solo mayúsculas/tildes/espacios). Clave en minúsculas -> grafía correcta.
-CORRECCIONES_PROCESO = {
+# Correcciones puntuales de typos detectados en personal.cargo/proceso/entidad
+# que la deduplicación case+tilde-insensitive no atrapa por sí sola (letras de
+# más/menos, no solo mayúsculas/tildes/espacios). Clave en minúsculas sin
+# tildes -> grafía correcta.
+CORRECCIONES_CATALOGO = {
     "subdieccion administrativa": "Subdireccion administrativa",
+    "enfernero jefe": "Enfermero Jefe",
+    "tecenico": "Técnico",
+    "profesiona de apoyo": "Profesional de apoyo",
+    "aux de enfermeria": "Auxiliar de Enfermería",
+    "aux enfermeria": "Auxiliar de Enfermería",
+    "urgencias obseracion": "Urgencias observacion",
+    "central esterilizacion": "Central de Esterilizacion",
+    "docencia servicio": "Docencia",
+    "cardiologia pediatrica": "Cardiología Pediátrica",
+    "enterostomal": "Enterostomal",
+    "porteria": "Portería",
+    "asit-asociacion sindical de trabajadores de salud": "ASIT",
+    "cm cirugia percutanea sas": "CM CIRUGIA PERCUTANEA SAS",
+    "grupo oftalologico del cauca sas": "GRUPO OFTALMOLOGICO DEL CAUCA SAS",
+    "terapeuta respitatorio": "Terapeuta Respiratorio",
+}
+
+# Entidades/sindicatos que sabemos que existen (ver formulario de inscripción
+# a reinducción 2026) pero de las que todavía nadie en `personal` tiene esa
+# entidad registrada, así que _valores_columna aún no las vería. Se agregan a
+# mano para que ya aparezcan en el <select> en vez de esperar a que alguien
+# las escriba primero en "Otra...".
+ENTIDADES_EXTRA = [
+    "CIRUGIA VASCULAR Y CARDIO NEURO ENDOVASCULAR",
+]
+
+# Mismo caso que ENTIDADES_EXTRA, pero para procesos.
+PROCESOS_EXTRA = [
+    "UCINT",
+]
+
+# Clave de respuestas del pre-test (21 preguntas), recuperada de las 163
+# personas con puntaje perfecto (21/21) entre las 1132 filas migradas del
+# Google Forms original — todas coinciden al 100% en cada pregunta, así que
+# esa coincidencia es la clave real. Vive en un archivo aparte (no en el
+# frontend) para que el cuestionario no se pueda calificar mirando el código
+# fuente de la página. Ver Segundo Cerebro/03 - Minutas.
+CLAVE_PRE_TEST: dict[str, str] = {
+    pregunta: datos["correcta"]
+    for pregunta, datos in json.loads(
+        (Path(__file__).parent / "data" / "pre_test_clave_respuestas.json").read_text(encoding="utf-8")
+    ).items()
 }
 
 
@@ -146,11 +190,22 @@ async def gauge(porcentaje: int):
     )
 
 
+def _clave_normalizada(valor: str) -> str:
+    """Minúsculas, espacios colapsados y sin tildes, para que 'Médico General'
+    y 'Medico General' se traten como el mismo valor."""
+    sin_tildes = "".join(
+        c for c in unicodedata.normalize("NFD", valor.lower())
+        if unicodedata.category(c) != "Mn"
+    )
+    return sin_tildes
+
+
 async def _valores_columna(columna: str) -> list[str]:
     """Valores distintos de una columna de texto en `personal`, deduplicados
-    sin distinguir mayúsculas/espacios (se conserva la grafía más frecuente
-    como canónica). `columna` siempre es uno de los tres literales fijos que
-    llaman a esta función más abajo, nunca entrada del usuario."""
+    sin distinguir mayúsculas/tildes/espacios (se conserva la grafía más
+    frecuente como canónica, salvo que haya una corrección puntual en
+    CORRECCIONES_CATALOGO). `columna` siempre es uno de los tres literales
+    fijos que llaman a esta función más abajo, nunca entrada del usuario."""
     p = await db.pool()
     filas = await p.fetch(
         f"select {columna} as v, count(*) as n from personal "
@@ -160,12 +215,19 @@ async def _valores_columna(columna: str) -> list[str]:
     agrupado: dict[str, tuple[str, int]] = {}
     for f in filas:
         valor = re.sub(r"\s+", " ", f["v"].strip())
-        valor = CORRECCIONES_PROCESO.get(valor.lower(), valor)
-        clave = valor.lower()
+        clave = _clave_normalizada(valor)
+        if clave in CORRECCIONES_CATALOGO:
+            valor = CORRECCIONES_CATALOGO[clave]
+            clave = _clave_normalizada(valor)
         actual = agrupado.get(clave)
         if actual is None or f["n"] > actual[1]:
             agrupado[clave] = (valor, f["n"])
-    return sorted(grafia for grafia, _ in agrupado.values())
+    # La grafía ganadora puede venir toda en minúscula si esa es la única
+    # variante que existe en `personal` (p. ej. "bachiller"): se fuerza la
+    # primera letra en mayúscula para que el <select> quede consistente.
+    return sorted(
+        grafia[:1].upper() + grafia[1:] for grafia, _ in agrupado.values()
+    )
 
 
 @app.get("/v1/catalogos")
@@ -175,10 +237,12 @@ async def catalogos():
     correo/entidad sin diligenciar). Cada uno lleva además una opción
     "Otra..." en el frontend para texto libre, por si el valor real todavía
     no está en el roster."""
+    entidades = sorted(set(await _valores_columna("entidad")) | set(ENTIDADES_EXTRA))
+    procesos = sorted(set(await _valores_columna("proceso")) | set(PROCESOS_EXTRA))
     return {
         "cargos": await _valores_columna("cargo"),
-        "procesos": await _valores_columna("proceso"),
-        "entidades": await _valores_columna("entidad"),
+        "procesos": procesos,
+        "entidades": entidades,
     }
 
 
@@ -222,6 +286,47 @@ async def buscar_personal(cedula: str):
     }
 
 
+@app.get("/v1/pre-test/{cedula}")
+async def buscar_pre_test(cedula: str):
+    """Lookup para pre-test-induccion2026.html: mismo criterio de `completo`
+    que /v1/personal, más `respondio` (ya existe una fila en `pre_test` para
+    la campaña activa). El frontend usa esto para decidir qué mostrar:
+      - No existe o incompleto  -> formulario de contacto, luego cuestionario.
+      - Existe, completo, no respondió -> directo al cuestionario.
+      - Existe, completo, ya respondió -> solo día/horario/salón (sin repetir
+        las 21 preguntas ni mencionar que ya respondió).
+    """
+    limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
+    if not limpia.isdigit():
+        raise HTTPException(status_code=422, detail="La cédula debe contener solo números.")
+
+    p = await db.pool()
+    fila = await p.fetchrow(
+        """
+        select nombre_completo, cargo, proceso, entidad,
+               (email_institucional is not null or email_secundario is not null) as tiene_correo,
+               pt.puntuacion as puntuacion
+          from personal
+          left join pre_test pt on pt.cedula = personal.cedula and pt.campana = $2
+         where personal.cedula = $1
+        """,
+        int(limpia), cfg.campana,
+    )
+    if fila is None:
+        return {"existe": False, "completo": False, "respondio": False}
+    completo = fila["entidad"] is not None and fila["tiene_correo"]
+    return {
+        "existe": True,
+        "completo": completo,
+        "respondio": fila["puntuacion"] is not None,
+        "puntuacion": fila["puntuacion"],
+        "nombre": fila["nombre_completo"],
+        "cargo": fila["cargo"],
+        "proceso": fila["proceso"],
+        "entidad": fila["entidad"],
+    }
+
+
 async def upsertar_personal(con_o_pool, cedula: int, nombre: str, cargo, proceso,
                              entidad, telefono, correo) -> None:
     """Crea o actualiza la fila de `personal` con lo que la persona acaba de
@@ -248,6 +353,117 @@ async def upsertar_personal(con_o_pool, cedula: int, nombre: str, cargo, proceso
         """,
         cedula, nombre, cargo, proceso, entidad, telefono, correo,
     )
+
+
+class PersonalContactoIn(BaseModel):
+    """Formulario de contacto de pre-test-induccion2026.html (cédula nueva, o
+    encontrada pero sin correo/entidad): solo crea/actualiza `personal`, sin
+    tocar `pre_test`. Igual que el resto (RespuestaIn, AsistenciaIn), reemplaza
+    lo que ya hubiera — ver upsertar_personal()."""
+    cedula: str = Field(min_length=5, max_length=15)
+    nombre: str = Field(min_length=3, max_length=120)
+    cargo: str | None = None
+    proceso: str | None = None
+    entidad: str | None = None
+    telefono: str | None = None
+    correo: EmailStr | None = None
+
+    @field_validator("cedula")
+    @classmethod
+    def solo_digitos(cls, v: str) -> str:
+        limpia = v.replace(".", "").replace(" ", "").replace("-", "").strip()
+        if not limpia.isdigit():
+            raise ValueError("La cédula debe contener solo números.")
+        return limpia
+
+
+@app.post("/v1/personal", status_code=200)
+async def guardar_personal(payload: PersonalContactoIn):
+    p = await db.pool()
+    await upsertar_personal(
+        p, int(payload.cedula), payload.nombre, payload.cargo,
+        payload.proceso, payload.entidad, payload.telefono, payload.correo,
+    )
+    return {"ok": True}
+
+
+class PreTestIn(BaseModel):
+    """Envío final de pre-test-induccion2026.html (botón "Enviar Confirmación").
+
+    `respuestas` solo viaja cuando la persona todavía no tenía fila en
+    `pre_test` (vio el cuestionario completo): se califica contra
+    CLAVE_PRE_TEST y se inserta la fila completa. Si ya había respondido
+    (`respondio: true` en /v1/pre-test), `respuestas` viaja vacío/None y esto
+    solo actualiza día/horario/salón de la fila que ya existe.
+    """
+    cedula: str = Field(min_length=5, max_length=15)
+    dia: str = Field(min_length=1, max_length=20)
+    horario: str = Field(min_length=1, max_length=20)
+    salon: str = Field(min_length=1, max_length=40)
+    respuestas: dict[str, str] | None = None
+
+    @field_validator("cedula")
+    @classmethod
+    def solo_digitos(cls, v: str) -> str:
+        limpia = v.replace(".", "").replace(" ", "").replace("-", "").strip()
+        if not limpia.isdigit():
+            raise ValueError("La cédula debe contener solo números.")
+        return limpia
+
+
+@app.post("/v1/pre-test", status_code=201)
+async def guardar_pre_test(payload: PreTestIn):
+    p = await db.pool()
+
+    if payload.respuestas:
+        faltantes = CLAVE_PRE_TEST.keys() - payload.respuestas.keys()
+        if faltantes:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Faltan respuestas: {', '.join(sorted(faltantes))}",
+            )
+        puntuacion = sum(
+            1 for pregunta, correcta in CLAVE_PRE_TEST.items()
+            if payload.respuestas.get(pregunta) == correcta
+        )
+        columnas_pregunta = sorted(CLAVE_PRE_TEST.keys())
+        valores_pregunta = [payload.respuestas[c] for c in columnas_pregunta]
+        placeholders_pregunta = ", ".join(
+            f"${i}" for i in range(6, 6 + len(columnas_pregunta))
+        )
+        actualizaciones_pregunta = ", ".join(
+            f"{c} = excluded.{c}" for c in columnas_pregunta
+        )
+        await p.execute(
+            f"""
+            insert into pre_test
+                   (campana, cedula, puntuacion, dia, horario, {", ".join(columnas_pregunta)}, salon)
+            values ($1, $2, $3, $4, $5, {placeholders_pregunta}, ${6 + len(columnas_pregunta)})
+            on conflict (campana, cedula) do update
+               set puntuacion = excluded.puntuacion,
+                   dia        = excluded.dia,
+                   horario    = excluded.horario,
+                   salon      = excluded.salon,
+                   {actualizaciones_pregunta}
+            """,
+            cfg.campana, int(payload.cedula), puntuacion, payload.dia, payload.horario,
+            *valores_pregunta, payload.salon,
+        )
+        return {"ok": True, "puntuacion": puntuacion}
+
+    resultado = await p.execute(
+        """
+        update pre_test set dia = $1, horario = $2, salon = $3
+         where campana = $4 and cedula = $5
+        """,
+        payload.dia, payload.horario, payload.salon, cfg.campana, int(payload.cedula),
+    )
+    if resultado == "UPDATE 0":
+        raise HTTPException(
+            status_code=404,
+            detail="No encontramos un pre-test previo para esta cédula.",
+        )
+    return {"ok": True}
 
 
 class AsistenciaIn(BaseModel):

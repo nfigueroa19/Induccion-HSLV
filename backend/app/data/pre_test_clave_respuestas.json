@@ -1,0 +1,199 @@
+{
+  "pregunta_01": {
+    "correcta": "c) Después del riesgo de exposición a líquidos corporales",
+    "opciones": [
+      "a) Despues del contacto con el entorno del paciente",
+      "b) Antes del contacto con el paciente",
+      "c) Después del riesgo de exposición a líquidos corporales",
+      "d) Antes de realizar una tarea limpia o aséptica"
+    ]
+  },
+  "pregunta_02": {
+    "correcta": "d) Todas las anteriores",
+    "opciones": [
+      "a) Revista medica",
+      "b) Rondas de enfermería",
+      "c) Abrazo de seguridad",
+      "d) Todas las anteriores",
+      "e) A y C son correctas"
+    ]
+  },
+  "pregunta_03": {
+    "correcta": "d) A y B son correctas",
+    "opciones": [
+      "a) Tablero de indicadores",
+      "b) Reuniones de mejoramiento",
+      "c) Abrazo de seguridad",
+      "d) A y B son correctas",
+      "e) Ninguna de las anteriores"
+    ]
+  },
+  "pregunta_04": {
+    "correcta": "a) Conato de Incendio",
+    "opciones": [
+      "a) Conato de Incendio",
+      "b) Terremoto",
+      "c) Atentado terrorista",
+      "d) Azonada"
+    ]
+  },
+  "pregunta_05": {
+    "correcta": "d) A y C son correctas",
+    "opciones": [
+      "a) Pausas Activas",
+      "b) Ruta del sol",
+      "c) Turnos máximo de 12 Horas",
+      "d) A y C son correctas",
+      "e) B y C son correctas"
+    ]
+  },
+  "pregunta_06": {
+    "correcta": "b) Cada año",
+    "opciones": [
+      "a) Cada 2 años",
+      "b) Cada año",
+      "c) Mensualmente",
+      "d) todas las anteriores"
+    ]
+  },
+  "pregunta_07": {
+    "correcta": "a) Plataforma estratégica y políticas institucionales",
+    "opciones": [
+      "a) Plataforma estratégica y políticas institucionales",
+      "b) Codigo de integridad y Codigo de Buen gobierno",
+      "c) Contabilidad  y Estadística"
+    ]
+  },
+  "pregunta_08": {
+    "correcta": "a) Trilogía del cuidado y Humanización en acción",
+    "opciones": [
+      "a) Trilogía del cuidado y Humanización en acción",
+      "b) Educacion que acompaña y ambientes que sanan",
+      "c) Tiempo para cuidarte y  educando con proposito",
+      "d) Pensando en ti doy lo mejor de mi y huella de excelencia"
+    ]
+  },
+  "pregunta_09": {
+    "correcta": "d) A y B son correctas",
+    "opciones": [
+      "a) Ruta del sol y Lazos de amor",
+      "b) Acompañamiento espiritual y emocional",
+      "c) Centro de escucha y SPA hospitalario",
+      "d) A y B son correctas",
+      "e) Ninguna de las anteriores"
+    ]
+  },
+  "pregunta_10": {
+    "correcta": "a) Centro de escucha y SPA hospitalario",
+    "opciones": [
+      "a) Centro de escucha y SPA hospitalario",
+      "b) Ruta del sol y Lazos de amor",
+      "d) Todas las anteriores",
+      "e) Ninguna de las anteriores"
+    ]
+  },
+  "pregunta_11": {
+    "correcta": "e) Todas as anteriores",
+    "opciones": [
+      "a) Acompañamiento espiritual y emocional",
+      "b) Rondas humanizadoras",
+      "c) Dolor no farmacológico",
+      "d) A y B son correctas",
+      "e) Todas as anteriores"
+    ]
+  },
+  "pregunta_12": {
+    "correcta": "d) B y C son correctas",
+    "opciones": [
+      "a) Spa hospitalario",
+      "b) Centro de escucha",
+      "c) Educando con proposito",
+      "d) B y C son correctas",
+      "e) Ninguna de las anteriores"
+    ]
+  },
+  "pregunta_13": {
+    "correcta": "d) A y B son correctas",
+    "opciones": [
+      "a) Reuniones de mejoramiento",
+      "b) Comites",
+      "c) Abrazo de seguridad",
+      "d) A y B son correctas",
+      "e) Ninguna de las anteriores"
+    ]
+  },
+  "pregunta_14": {
+    "correcta": "b) Principios y valores",
+    "opciones": [
+      "a) Derechos y deberes",
+      "b) Principios y valores",
+      "c) Misión y Visión",
+      "d) Objetivos estrategicos"
+    ]
+  },
+  "pregunta_15": {
+    "correcta": "d) Cada año",
+    "opciones": [
+      "a) Cada dos años",
+      "b) Cada seis meses",
+      "d) Cada año",
+      "e) No hace medición de adherencia a la cultura"
+    ]
+  },
+  "pregunta_16": {
+    "correcta": "e) A y B son correctas",
+    "opciones": [
+      "a) Codigo de integridad",
+      "b) Imagen Corporativa",
+      "c) himno Institucional",
+      "d) ninguna de las anteriores",
+      "e) A y B son correctas"
+    ]
+  },
+  "pregunta_17": {
+    "correcta": "b) Administrar los recursos de manera eficiente, transparente y responsable para garantizar la prestación de los servicios de salud.",
+    "opciones": [
+      "a) Generar ganancias en la institución",
+      "b) Administrar los recursos de manera eficiente, transparente y responsable para garantizar la prestación de los servicios de salud.",
+      "c) Reducir costos sin importar la calidad del servicio.",
+      "d) Aumentar los impuestos para financiar el Hospital."
+    ]
+  },
+  "pregunta_18": {
+    "correcta": "d) Prescripción de medicamentos a los pacientes",
+    "opciones": [
+      "a) Facturación de los servicios prestados",
+      "b) Auditoría de cuentas medicas",
+      "c) Gestión de cartera para el seguimiento de pagos",
+      "d) Prescripción de medicamentos a los pacientes"
+    ]
+  },
+  "pregunta_19": {
+    "correcta": "b) El riesgo de Lavado de Activos y Financiación del Terrorismo (LA/FT).",
+    "opciones": [
+      "a) Únicamente los riesgos financieros del Hospital.",
+      "b) El riesgo de Lavado de Activos y Financiación del Terrorismo (LA/FT).",
+      "c) Únicamente los riesgos relacionados con la prestación de servicios de salud.",
+      "d) Los riesgos asociados exclusivamente al talento humano."
+    ]
+  },
+  "pregunta_20": {
+    "correcta": "a) Identificar, valorar, tratar y monitorear los riesgos.",
+    "opciones": [
+      "a) Identificar, valorar, tratar y monitorear los riesgos.",
+      "b) Únicamente identificar los riesgos cuando se materialicen.",
+      "c) Trasladar todos los riesgos a terceros.",
+      "d) Aceptar todos los riesgos identificados."
+    ]
+  },
+  "pregunta_21": {
+    "correcta": "d) A y B son correctas",
+    "opciones": [
+      "a) Integración de las vigilancias",
+      "b) Gobernanza tecnológica",
+      "c) Transformacion digital",
+      "d) A y B son correctas",
+      "e) todas las anteriores"
+    ]
+  }
+}
