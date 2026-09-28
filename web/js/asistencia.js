@@ -167,6 +167,7 @@ if (localStorage.getItem(CLAVE_LOCAL)) {
   // formCedula completo aquí, o el mensaje que se pone en status desaparece
   // con él (esto causaba la pantalla en blanco al recargar).
   document.getElementById('grupo-cedula').hidden = true;
+  document.getElementById('grupo-autorizacion').hidden = true;
   btnCedula.hidden = true;
   status.textContent = 'Ya registraste tu asistencia desde este navegador. ¡Gracias!';
   status.classList.add('status-grande');
@@ -222,6 +223,7 @@ formCedula.addEventListener('submit', async (e) => {
       try {
         await guardarAsistencia({ cedula: valor, encontrado: true, nombre: data.nombre });
         document.getElementById('grupo-cedula').hidden = true;
+        document.getElementById('grupo-autorizacion').hidden = true;
         btnCedula.hidden = true;
         hero.hidden = true;
         status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
@@ -230,6 +232,7 @@ formCedula.addEventListener('submit', async (e) => {
       } catch (err) {
         if (err.bloqueado) {
           document.getElementById('grupo-cedula').hidden = true;
+          document.getElementById('grupo-autorizacion').hidden = true;
           btnCedula.hidden = true;
           hero.hidden = true;
           status.textContent = err.message;
@@ -273,6 +276,7 @@ formContacto.addEventListener('submit', async (e) => {
   // (cédula + hint), #form-contacto ni el hero.
   function mostrarSoloMensajeFinal() {
     document.getElementById('grupo-cedula').hidden = true;
+    document.getElementById('grupo-autorizacion').hidden = true;
     formContacto.hidden = true;
     hero.hidden = true;
   }

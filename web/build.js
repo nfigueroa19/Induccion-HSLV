@@ -1,13 +1,17 @@
-// Genera web/dist_pi/: copia de todo lo de aquí (menos este mismo build y
-// dist_pi) con HTML/CSS/JS minificados, sin comentarios, y variables locales
-// de JS renombradas (terser mangle) — la versión que se lleva a la Raspberry
-// Pi y la que se sube a Cloudflare Pages (`wrangler pages deploy dist_pi
-// --project-name=induccion-hslv-frontend`) en vez del código fuente.
+// Genera una copia de todo lo de aquí (menos este mismo build y las carpetas
+// de salida) con HTML/CSS/JS minificados, sin comentarios, y variables
+// locales de JS renombradas (terser mangle). Dos destinos posibles, ambos
+// generados por este mismo script, nunca editados a mano:
+//   - dist_pi: la que se lleva por scp a la Raspberry Pi el día del evento.
+//   - dist_cf: la que se sube a Cloudflare Pages
+//     (`npx wrangler pages deploy dist_cf --project-name=induccion-hslv-frontend`)
+//     en vez del código fuente crudo.
 //
-// El código fuente (este `web/`, fuera de dist_pi) sigue siendo el único que
-// se edita — dist_pi se regenera entera cada vez, nunca se edita a mano.
+// El código fuente (este `web/`, fuera de dist_pi/dist_cf) sigue siendo el
+// único que se edita — cada carpeta de salida se borra y regenera entera.
 //
-// Uso: npm install (una sola vez) && npm run build
+// Uso: npm install (una sola vez) && npm run build:pi   (-> dist_pi)
+//                                  && npm run build:cf   (-> dist_cf)
 
 const fs = require("fs");
 const path = require("path");
@@ -16,8 +20,14 @@ const { minify: minifyHtml } = require("html-minifier-terser");
 const CleanCSS = require("clean-css");
 
 const RAIZ = __dirname;
-const SALIDA = path.join(RAIZ, "dist_pi");
-const EXCLUIR = new Set(["dist_pi", "node_modules", "package.json", "package-lock.json", "build.js"]);
+const DESTINOS_VALIDOS = new Set(["dist_pi", "dist_cf"]);
+const nombreSalida = process.argv[2] || "dist_pi";
+if (!DESTINOS_VALIDOS.has(nombreSalida)) {
+  console.error(`Destino inválido "${nombreSalida}". Usa: ${[...DESTINOS_VALIDOS].join(" | ")}`);
+  process.exit(1);
+}
+const SALIDA = path.join(RAIZ, nombreSalida);
+const EXCLUIR = new Set([...DESTINOS_VALIDOS, "node_modules", "package.json", "package-lock.json", "build.js"]);
 // Solo entran extensiones de assets reales del sitio — cualquier otra cosa
 // (.wrangler/ con el account id de Cloudflare, servir_local.py, etc.) se
 // queda fuera aunque no esté en EXCLUIR explícitamente.

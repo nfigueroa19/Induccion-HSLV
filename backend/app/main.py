@@ -293,8 +293,10 @@ async def buscar_pre_test(cedula: str):
     la campaña activa). El frontend usa esto para decidir qué mostrar:
       - No existe o incompleto  -> formulario de contacto, luego cuestionario.
       - Existe, completo, no respondió -> directo al cuestionario.
-      - Existe, completo, ya respondió -> solo día/horario/salón (sin repetir
-        las 21 preguntas ni mencionar que ya respondió).
+      - Existe, completo, respondió, sin día/horario/salón -> solo esa
+        selección (sin repetir las 21 preguntas ni mencionar que ya respondió).
+      - Existe, completo, respondió y ya tiene día/horario/salón -> directo a
+        la confirmación con esos datos (sin repetir nada).
     """
     limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
     if not limpia.isdigit():
@@ -305,7 +307,7 @@ async def buscar_pre_test(cedula: str):
         """
         select nombre_completo, cargo, proceso, entidad,
                (email_institucional is not null or email_secundario is not null) as tiene_correo,
-               pt.puntuacion as puntuacion
+               pt.puntuacion as puntuacion, pt.dia as dia, pt.horario as horario, pt.salon as salon
           from personal
           left join pre_test pt on pt.cedula = personal.cedula and pt.campana = $2
          where personal.cedula = $1
@@ -324,6 +326,9 @@ async def buscar_pre_test(cedula: str):
         "cargo": fila["cargo"],
         "proceso": fila["proceso"],
         "entidad": fila["entidad"],
+        "dia": fila["dia"],
+        "horario": fila["horario"],
+        "salon": fila["salon"],
     }
 
 

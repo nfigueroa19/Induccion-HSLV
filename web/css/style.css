@@ -124,13 +124,67 @@ h1 {
   margin: 0 0 28px;
 }
 
+.puntaje-badge {
+  display: inline-block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary);
+  border-radius: 999px;
+  padding: 7px 18px;
+  margin: 0 0 16px;
+}
+
+.banner-anuncio {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 0 0 20px;
+}
+
+.anuncio-card {
+  background: var(--color-field-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0 0 24px;
+}
+.anuncio-titulo {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 0 0 14px;
+}
+.anuncio-detalle {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 0 0 4px;
+}
+
 form { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; }
 
-.field label {
+.field label:not(.opcion),
+.field legend {
   display: block;
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 6px;
+}
+fieldset.field {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+fieldset.field legend {
+  padding: 0;
+  width: 100%;
 }
 .field .hint {
   font-size: 12px;
@@ -192,10 +246,11 @@ form { position: relative; z-index: 1; display: flex; flex-direction: column; ga
   font-style: italic;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="tel"],
+/* input:not([type="checkbox"]) en vez de listar input[type="text"] a mano:
+   html-minifier-terser (removeRedundantAttributes) borra type="text" por
+   ser el valor por defecto, y un selector [type="text"] explícito deja de
+   coincidir con ese input ya minificado (encontrado 2026-09-27). */
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   width: 100%;
@@ -217,6 +272,17 @@ input:focus, select:focus, textarea:focus {
 input:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Chrome reconoce email/tel como "datos de contacto" y les pinta su propio
+   fondo resaltado (a veces con más alto) pese a autocomplete="new-password"
+   — este hack de -webkit-box-shadow inset fuerza nuestro fondo de vuelta. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-field-bg) inset;
+  -webkit-text-fill-color: var(--color-ink);
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 textarea {
@@ -543,6 +609,109 @@ button.submit[disabled] {
   #modal h2 { font-size: 18.5px; }
   .componentes li { grid-template-columns: 1fr 30px 68px; }
 }
+
+/* ---------------------------------------------------------------------------
+   Cuestionario del pre-test (opción múltiple, 21 preguntas)
+   --------------------------------------------------------------------------- */
+
+.progreso-quiz {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-align: center;
+  margin: 0 0 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.field.pregunta {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(22, 36, 26, 0.06);
+}
+
+.pregunta > label,
+.pregunta > legend {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opcion {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--color-field-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: border-color var(--duration-quick) var(--ease-out),
+              background-color var(--duration-quick) var(--ease-out),
+              box-shadow var(--duration-quick) var(--ease-out);
+}
+.opcion:hover { border-color: var(--color-primary); }
+.opcion input[type="radio"] {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.opcion:has(input:checked) {
+  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(118, 184, 42, 0.2);
+}
+
+/* ---------------------------------------------------------------------------
+   Footer institucional — presente en todas las páginas excepto el splash.
+   --------------------------------------------------------------------------- */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 40px;
+  padding: 22px 24px 26px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-field-bg);
+  text-align: center;
+}
+.site-footer-logo {
+  width: 30px;
+  height: auto;
+  opacity: 0.85;
+  margin: 0 0 10px;
+}
+.site-footer p {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+}
+.site-footer p:last-child { margin-bottom: 0; }
+.site-footer-contacto { font-size: 12.5px; }
+.site-footer-contacto a,
+.site-footer-legal a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.site-footer-contacto a:hover,
+.site-footer-legal a:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

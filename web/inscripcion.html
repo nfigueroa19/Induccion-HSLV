@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pre-test de Reinducción 2026 — HSLV</title>
+<link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
+<link rel="stylesheet" href="css/style.css?v=20260927g" />
+<link rel="stylesheet" href="css/splash.css" />
+</head>
+<body>
+
+<div id="splashScreen">
+  <img class="splash-img" src="Assets/Logo/logo-unidad-ia.jpg" alt="Unidad de Inteligencia Artificial — Hospital Susana López de Valencia" />
+  <div class="splash-loader-wrap">
+    <div class="splash-loader-label">
+      <span>Cargando</span>
+      <span id="splashPercent">0%</span>
+    </div>
+    <div class="splash-loader-track">
+      <div id="splashBar" class="splash-loader-bar"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <img class="watermark" src="Assets/Logo/hslv-mark.png" alt="" aria-hidden="true" />
+
+  <div class="topbar">
+    <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
+    <div class="wordmark">
+      <div class="name">Hospital Susana López de Valencia E.S.E.</div>
+      <div class="sub">Memoria, Huella e Identidad</div>
+      <div class="sub">Reinducción Institucional 2026</div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Paso 1: identificación. Igual que index.html/asistencia.html — se
+         busca la cédula en `personal`; si falta correo/entidad se completa
+         con el formulario de contacto antes de pasar al cuestionario. -->
+    <section class="paso" id="paso-cedula">
+      <div class="hero">
+        <img class="banner-anuncio" src="Assets/Pretest/inscripcion.jpg?v=2" alt="Inscripción Reinducción 2026 - Memoria, Huella, Identidad. Fecha: 13 y 14 de octubre 2026, 8:00 am - 5:00 pm. Lugar: Casa de la Moneda." />
+        <div class="anuncio-card">
+          <p class="anuncio-titulo">Inscripción Reinducción 2026 - "Memoria - Huella - Identidad"</p>
+          <p class="anuncio-detalle">Fecha: 13 y 14 de octubre 2026</p>
+          <p class="anuncio-detalle">Lugar: Centro de Convenciones Casa de la Moneda</p>
+        </div>
+        <p class="lede">Por favor, ingresa tu número de cédula para continuar.</p>
+      </div>
+
+      <form id="form-cedula" autocomplete="off">
+        <div class="field">
+          <label for="cedula">Número de cédula</label>
+          <input type="number" id="cedula" name="cedula" inputmode="numeric" autocomplete="new-password" required />
+          <p class="hint">Sin puntos ni espacios.</p>
+        </div>
+
+        <div class="field consent">
+          <label for="autorizacion">
+            <input type="checkbox" id="autorizacion" name="autorizacion" required />
+            <span>Autorizo al Hospital Susana López de Valencia E.S.E. a tratar mis datos de contacto con las finalidades de verificar mi identidad y gestionar mi inscripción a este evento institucional, de conformidad con la Ley 1581 de 2012.</span>
+          </label>
+        </div>
+
+        <button class="submit" type="submit" id="btn-cedula">Continuar</button>
+        <p class="status" id="status-cedula" role="status"></p>
+      </form>
+
+      <form id="form-contacto" autocomplete="off" hidden>
+        <div class="field">
+          <label for="nombre">Nombre(s) y Apellidos</label>
+          <input type="text" id="nombre" name="nombre" autocomplete="new-password" required />
+        </div>
+
+        <div class="field">
+          <label for="correo">Correo electrónico</label>
+          <input type="email" id="correo" name="correo" autocomplete="new-password" required />
+        </div>
+
+        <div class="field">
+          <label for="telefono">Teléfono</label>
+          <input type="tel" id="telefono" name="telefono" inputmode="numeric" autocomplete="new-password" required />
+        </div>
+
+        <div class="field">
+          <label for="cargo-contacto">Cargo</label>
+          <select id="cargo-contacto" name="cargo" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu cargo</option>
+          </select>
+          <input type="text" id="cargo-contacto-otra" name="cargo-otra" placeholder="Escribe tu cargo" autocomplete="off" hidden />
+        </div>
+
+        <div class="field">
+          <label for="proceso-contacto">Proceso</label>
+          <select id="proceso-contacto" name="proceso" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu proceso</option>
+          </select>
+          <input type="text" id="proceso-contacto-otra" name="proceso-otra" placeholder="Escribe tu proceso" autocomplete="off" hidden />
+        </div>
+
+        <div class="field">
+          <label for="entidad-contacto">Entidad / Sindicato</label>
+          <select id="entidad-contacto" name="entidad" autocomplete="off" required>
+            <option value="" disabled selected>Selecciona tu entidad</option>
+          </select>
+          <input type="text" id="entidad-contacto-otra" name="entidad-otra" placeholder="Escribe tu entidad" autocomplete="off" hidden />
+        </div>
+
+        <button class="submit" type="submit">Continuar</button>
+        <p class="status" id="status-contacto" role="status"></p>
+      </form>
+    </section>
+
+    <!-- Paso 2: cuestionario de conocimiento (21 preguntas). Solo se muestra
+         a quien todavía no tiene una fila en `pre_test` para esta campaña. -->
+    <section class="paso" id="paso-preguntas" hidden>
+      <div class="hero">
+        <p class="eyebrow">Pre-test de Reinducción 2026</p>
+        <h1>Cuestionario de conocimiento</h1>
+        <p class="lede">Responde las siguientes preguntas para continuar.</p>
+      </div>
+
+      <form id="form-preguntas" autocomplete="off">
+        <img class="banner-anuncio" src="Assets/Pretest/cultura.jpg?v=2" alt="Cultura Susana — Pensando en ti, doy lo mejor de mí." />
+        <p class="progreso-quiz" id="progreso-quiz">0 de 21 preguntas respondidas</p>
+
+        <div class="field pregunta" data-num="1">
+          <label>1. Enuncie el momento de higiene de manos, según la clasificación de la Organización Mundial de la Salud, con mayor adherencia en la institución</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_01" value="a) Despues del contacto con el entorno del paciente" required /><span>a) Despues del contacto con el entorno del paciente</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_01" value="b) Antes del contacto con el paciente" /><span>b) Antes del contacto con el paciente</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_01" value="c) Después del riesgo de exposición a líquidos corporales" /><span>c) Después del riesgo de exposición a líquidos corporales</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_01" value="d) Antes de realizar una tarea limpia o aséptica" /><span>d) Antes de realizar una tarea limpia o aséptica</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="2">
+          <label>2. Mencione los elementos que facilitan la comunicación entre el equipo de trabajo orientados a alertar precozmente sobre el deterioro clínico del paciente</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_02" value="a) Revista medica" required /><span>a) Revista medica</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_02" value="b) Rondas de enfermería" /><span>b) Rondas de enfermería</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_02" value="c) Abrazo de seguridad" /><span>c) Abrazo de seguridad</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_02" value="d) Todas las anteriores" /><span>d) Todas las anteriores</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_02" value="e) A y C son correctas" /><span>e) A y C son correctas</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="3">
+          <label>3. Mencione dos elementos que facilitan la comunicación entre los procesos asistenciales y administrativos</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_03" value="a) Tablero de indicadores" required /><span>a) Tablero de indicadores</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_03" value="b) Reuniones de mejoramiento" /><span>b) Reuniones de mejoramiento</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_03" value="c) Abrazo de seguridad" /><span>c) Abrazo de seguridad</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_03" value="d) A y B son correctas" /><span>d) A y B son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_03" value="e) Ninguna de las anteriores" /><span>e) Ninguna de las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="4">
+          <label>4. ¿Cuál fue el último simulacro de emergencias y desastres que realizó el hospital?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_04" value="a) Conato de Incendio" required /><span>a) Conato de Incendio</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_04" value="b) Terremoto" /><span>b) Terremoto</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_04" value="c) Atentado terrorista" /><span>c) Atentado terrorista</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_04" value="d) Azonada" /><span>d) Azonada</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="5">
+          <label>5. Enuncie dos mecanismos que la institución ha implementado para prevenir el cansancio del personal asistencial en contacto permanente con el paciente</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_05" value="a) Pausas Activas" required /><span>a) Pausas Activas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_05" value="b) Ruta del sol" /><span>b) Ruta del sol</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_05" value="c) Turnos máximo de 12 Horas" /><span>c) Turnos máximo de 12 Horas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_05" value="d) A y C son correctas" /><span>d) A y C son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_05" value="e) B y C son correctas" /><span>e) B y C son correctas</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="6">
+          <label>6. ¿Cada cuánto se realiza la reinducción institucional?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_06" value="a) Cada 2 años" required /><span>a) Cada 2 años</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_06" value="b) Cada año" /><span>b) Cada año</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_06" value="c) Mensualmente" /><span>c) Mensualmente</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_06" value="d) todas las anteriores" /><span>d) todas las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="7">
+          <label>7. Mencione dos temas contenidos en la inducción</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_07" value="a) Plataforma estratégica y políticas institucionales" required /><span>a) Plataforma estratégica y políticas institucionales</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_07" value="b) Codigo de integridad y Codigo de Buen gobierno" /><span>b) Codigo de integridad y Codigo de Buen gobierno</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_07" value="c) Contabilidad  y Estadística" /><span>c) Contabilidad  y Estadística</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="8">
+          <label>8. ¿Cuáles son las líneas de la política de humanización?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_08" value="a) Trilogía del cuidado y Humanización en acción" required /><span>a) Trilogía del cuidado y Humanización en acción</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_08" value="b) Educacion que acompaña y ambientes que sanan" /><span>b) Educacion que acompaña y ambientes que sanan</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_08" value="c) Tiempo para cuidarte y  educando con proposito" /><span>c) Tiempo para cuidarte y  educando con proposito</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_08" value="d) Pensando en ti doy lo mejor de mi y huella de excelencia" /><span>d) Pensando en ti doy lo mejor de mi y huella de excelencia</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="9">
+          <label>9. Mencione elementos de la política de humanización hacia el usuario y su familia</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_09" value="a) Ruta del sol y Lazos de amor" required /><span>a) Ruta del sol y Lazos de amor</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_09" value="b) Acompañamiento espiritual y emocional" /><span>b) Acompañamiento espiritual y emocional</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_09" value="c) Centro de escucha y SPA hospitalario" /><span>c) Centro de escucha y SPA hospitalario</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_09" value="d) A y B son correctas" /><span>d) A y B son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_09" value="e) Ninguna de las anteriores" /><span>e) Ninguna de las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="10">
+          <label>10. Mencione dos elementos de la política de humanización hacia el trabajador</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_10" value="a) Centro de escucha y SPA hospitalario" required /><span>a) Centro de escucha y SPA hospitalario</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_10" value="b) Ruta del sol y Lazos de amor" /><span>b) Ruta del sol y Lazos de amor</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_10" value="d) Todas las anteriores" /><span>d) Todas las anteriores</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_10" value="e) Ninguna de las anteriores" /><span>e) Ninguna de las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="11">
+          <label>11. Mencione qué acciones propician la relación humanizada entre el equipo de salud y el usuario y su familia</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_11" value="a) Acompañamiento espiritual y emocional" required /><span>a) Acompañamiento espiritual y emocional</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_11" value="b) Rondas humanizadoras" /><span>b) Rondas humanizadoras</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_11" value="c) Dolor no farmacológico" /><span>c) Dolor no farmacológico</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_11" value="d) A y B son correctas" /><span>d) A y B son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_11" value="e) Todas as anteriores" /><span>e) Todas as anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="12">
+          <label>12. Mencione dos acciones que evidencien la humanización en la relación entre compañeros, subalternos y jefes</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_12" value="a) Spa hospitalario" required /><span>a) Spa hospitalario</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_12" value="b) Centro de escucha" /><span>b) Centro de escucha</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_12" value="c) Educando con proposito" /><span>c) Educando con proposito</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_12" value="d) B y C son correctas" /><span>d) B y C son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_12" value="e) Ninguna de las anteriores" /><span>e) Ninguna de las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="13">
+          <label>13. Mencione dos mecanismos que faciliten la comunicación entre el jefe y sus subalternos, en doble vía</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_13" value="a) Reuniones de mejoramiento" required /><span>a) Reuniones de mejoramiento</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_13" value="b) Comites" /><span>b) Comites</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_13" value="c) Abrazo de seguridad" /><span>c) Abrazo de seguridad</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_13" value="d) A y B son correctas" /><span>d) A y B son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_13" value="e) Ninguna de las anteriores" /><span>e) Ninguna de las anteriores</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="14">
+          <label>14. El código de integridad incluye</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_14" value="a) Derechos y deberes" required /><span>a) Derechos y deberes</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_14" value="b) Principios y valores" /><span>b) Principios y valores</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_14" value="c) Misión y Visión" /><span>c) Misión y Visión</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_14" value="d) Objetivos estrategicos" /><span>d) Objetivos estrategicos</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="15">
+          <label>15. ¿Cada cuánto el hospital realiza encuestas para medir la adherencia a la cultura organizacional?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_15" value="a) Cada dos años" required /><span>a) Cada dos años</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_15" value="b) Cada seis meses" /><span>b) Cada seis meses</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_15" value="d) Cada año" /><span>d) Cada año</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_15" value="e) No hace medición de adherencia a la cultura" /><span>e) No hace medición de adherencia a la cultura</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="16">
+          <label>16. Mencione dos elementos de la cultura organizacional que aplica diariamente en sus actividades</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_16" value="a) Codigo de integridad" required /><span>a) Codigo de integridad</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_16" value="b) Imagen Corporativa" /><span>b) Imagen Corporativa</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_16" value="c) himno Institucional" /><span>c) himno Institucional</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_16" value="d) ninguna de las anteriores" /><span>d) ninguna de las anteriores</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_16" value="e) A y B son correctas" /><span>e) A y B son correctas</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="17">
+          <label>17. ¿Cuál es el objetivo principal de la gestión financiera del Hospital?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_17" value="a) Generar ganancias en la institución" required /><span>a) Generar ganancias en la institución</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_17" value="b) Administrar los recursos de manera eficiente, transparente y responsable para garantizar la prestación de los servicios de salud." /><span>b) Administrar los recursos de manera eficiente, transparente y responsable para garantizar la prestación de los servicios de salud.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_17" value="c) Reducir costos sin importar la calidad del servicio." /><span>c) Reducir costos sin importar la calidad del servicio.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_17" value="d) Aumentar los impuestos para financiar el Hospital." /><span>d) Aumentar los impuestos para financiar el Hospital.</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="18">
+          <label>18. ¿Cuál de las siguientes actividades NO hace parte del ciclo de la gestión financiera del Hospital?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_18" value="a) Facturación de los servicios prestados" required /><span>a) Facturación de los servicios prestados</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_18" value="b) Auditoría de cuentas medicas" /><span>b) Auditoría de cuentas medicas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_18" value="c) Gestión de cartera para el seguimiento de pagos" /><span>c) Gestión de cartera para el seguimiento de pagos</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_18" value="d) Prescripción de medicamentos a los pacientes" /><span>d) Prescripción de medicamentos a los pacientes</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="19">
+          <label>19. ¿Qué busca prevenir y administrar la Política SARLAFT del Hospital Susana López de Valencia E.S.E.?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_19" value="a) Únicamente los riesgos financieros del Hospital." required /><span>a) Únicamente los riesgos financieros del Hospital.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_19" value="b) El riesgo de Lavado de Activos y Financiación del Terrorismo (LA/FT)." /><span>b) El riesgo de Lavado de Activos y Financiación del Terrorismo (LA/FT).</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_19" value="c) Únicamente los riesgos relacionados con la prestación de servicios de salud." /><span>c) Únicamente los riesgos relacionados con la prestación de servicios de salud.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_19" value="d) Los riesgos asociados exclusivamente al talento humano." /><span>d) Los riesgos asociados exclusivamente al talento humano.</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="20">
+          <label>20. ¿Cuál de las siguientes acciones hace parte de la gestión de los riesgos asociados al SARLAFT?</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_20" value="a) Identificar, valorar, tratar y monitorear los riesgos." required /><span>a) Identificar, valorar, tratar y monitorear los riesgos.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_20" value="b) Únicamente identificar los riesgos cuando se materialicen." /><span>b) Únicamente identificar los riesgos cuando se materialicen.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_20" value="c) Trasladar todos los riesgos a terceros." /><span>c) Trasladar todos los riesgos a terceros.</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_20" value="d) Aceptar todos los riesgos identificados." /><span>d) Aceptar todos los riesgos identificados.</span></label>
+          </div>
+        </div>
+
+        <div class="field pregunta" data-num="21">
+          <label>21. Enuncie dos mecanismos implementados por la institución para la provisión oportuna de tecnología a todos los pacientes</label>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="pregunta_21" value="a) Integración de las vigilancias" required /><span>a) Integración de las vigilancias</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_21" value="b) Gobernanza tecnológica" /><span>b) Gobernanza tecnológica</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_21" value="c) Transformacion digital" /><span>c) Transformacion digital</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_21" value="d) A y B son correctas" /><span>d) A y B son correctas</span></label>
+            <label class="opcion"><input type="radio" name="pregunta_21" value="e) todas las anteriores" /><span>e) todas las anteriores</span></label>
+          </div>
+        </div>
+
+        <button class="submit" type="submit">Continuar</button>
+        <p class="status" id="status-preguntas" role="status"></p>
+      </form>
+    </section>
+
+    <!-- Paso 3: día/horario/salón. Lo responde absolutamente todo el mundo
+         (haya o no respondido antes el cuestionario) — cambiaron las fechas
+         del evento a 13 y 14 de octubre, mismos horarios de siempre (7:30
+         a.m. y 1:30 p.m.). Quien ya respondió el cuestionario llega derecho
+         aquí, sin repetir las 21 preguntas ni mencionar que ya respondió. -->
+    <section class="paso" id="paso-salon" hidden>
+      <div class="hero">
+        <img class="banner-anuncio" src="Assets/Pretest/inscripcion.jpg?v=2" alt="Inscripción Reinducción 2026 - Memoria, Huella, Identidad" />
+        <div id="salon-texto">
+          <p class="eyebrow">Inscripción Reinducción 2026 - "Memoria - Huella - Identidad"</p>
+          <p class="puntaje-badge" id="puntaje-previo" hidden></p>
+          <h1>Ya casi terminamos</h1>
+          <p class="lede">Selecciona el día y horario en el que puedes asistir.</p>
+        </div>
+        <div class="anuncio-card" id="salon-anuncio-card" hidden>
+          <p class="anuncio-titulo">Inscripción Reinducción 2026 - "Memoria - Huella - Identidad"</p>
+          <p class="anuncio-detalle">Fecha: 13 y 14 de octubre 2026</p>
+          <p class="anuncio-detalle">Lugar: Centro de Convenciones Casa de la Moneda</p>
+        </div>
+      </div>
+
+      <form id="form-salon" autocomplete="off">
+        <fieldset class="field pregunta">
+          <legend>Día de asistencia</legend>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="dia" value="2026-10-13" required /><span>Martes 13 de octubre de 2026</span></label>
+            <label class="opcion"><input type="radio" name="dia" value="2026-10-14" /><span>Miércoles 14 de octubre de 2026</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field pregunta">
+          <legend>Horario</legend>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="horario" value="7:30" required /><span>7:30 a.m.</span></label>
+            <label class="opcion"><input type="radio" name="horario" value="13:30" /><span>1:30 p.m.</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field pregunta">
+          <legend>Salón</legend>
+          <div class="opciones">
+            <label class="opcion"><input type="radio" name="salon" value="memoria" required /><span>Memoria</span></label>
+            <label class="opcion"><input type="radio" name="salon" value="huella" /><span>Huella</span></label>
+          </div>
+        </fieldset>
+
+        <button class="submit" type="submit">Enviar Confirmación</button>
+        <p class="status" id="status-salon" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <img class="site-footer-logo" src="Assets/Logo/hslv-mark.png" alt="" aria-hidden="true" />
+    <p class="site-footer-contacto">¿Tienes dudas o problemas? Escríbenos a <a href="mailto:unidadia@hosusana.gov.co">unidadia@hosusana.gov.co</a></p>
+    <p class="site-footer-dev">Desarrollado por Ing. Nicolás Figueroa Maca — Unidad de Inteligencia Artificial, Hospital Susana López de Valencia E.S.E.</p>
+    <p class="site-footer-legal">Tus datos son tratados conforme a nuestra <a href="https://hosusana.gov.co/Transparencia/PoliticasLineamientos/Pol%C3%ADtica%20tratamiento%20de%20datos.pdf" target="_blank" rel="noopener">Política de tratamiento de datos personales</a>.</p>
+    <p class="site-footer-copy">© 2026 Hospital Susana López de Valencia E.S.E. — Todos los derechos reservados.</p>
+  </footer>
+
+</div>
+
+<script src="js/pretest.js?v=20260928b"></script>
+<script src="js/splash.js"></script>
+</body>
+</html>
