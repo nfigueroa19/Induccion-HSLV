@@ -37,6 +37,25 @@ const EXTENSIONES_COPIA_DIRECTA = new Set([
 ]);
 const ARCHIVOS_SIN_EXTENSION_PERMITIDOS = new Set(["_redirects"]);
 
+// En el código fuente, script.js/pretest.js/login.js/dashboard.js/
+// gestion-interna.js detectan `localhost`/`127.0.0.1` para apuntar al
+// backend local durante desarrollo (ver Induccion2/.claude/launch.json).
+// En lo publicado no hace falta esa rama — solo revela infraestructura de
+// desarrollo sin ningún beneficio funcional — así que se reemplaza por la
+// URL de producción fija antes de minificar.
+// `asistencia.js` queda fuera a propósito: además de local/producción
+// también detecta la IP LAN de la Raspberry Pi el día del evento (DHCP del
+// TP-Link, ver dispositivo.py) y esa rama sí debe seguir viva en lo publicado.
+const PATRON_DETECCION_LOCAL = /const API = \(location\.hostname === 'localhost' \|\| location\.hostname === '127\.0\.0\.1'\)\s*\r?\n\s*\?\s*'[^']*'\s*\r?\n\s*:\s*'([^']*)';/;
+
+function ocultarDeteccionLocal(codigo, nombreArchivo) {
+  if (nombreArchivo === "asistencia.js") return codigo;
+  return codigo.replace(PATRON_DETECCION_LOCAL, (coincide, urlProduccion) => {
+    if (!urlProduccion) return coincide; // patrón no encontrado tal cual, se deja igual
+    return `const API = '${urlProduccion}';`;
+  });
+}
+
 async function minificarJs(codigo) {
   const resultado = await minifyJs(codigo, {
     mangle: true,
@@ -71,7 +90,7 @@ async function procesarArchivo(origen, destino) {
   fs.mkdirSync(path.dirname(destino), { recursive: true });
 
   if (ext === ".js") {
-    const codigo = fs.readFileSync(origen, "utf8");
+    const codigo = ocultarDeteccionLocal(fs.readFileSync(origen, "utf8"), path.basename(origen));
     fs.writeFileSync(destino, await minificarJs(codigo));
   } else if (ext === ".css") {
     const codigo = fs.readFileSync(origen, "utf8");

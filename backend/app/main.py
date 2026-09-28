@@ -17,6 +17,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from . import db
 from . import eventos
@@ -138,6 +142,20 @@ app.add_middleware(
     expose_headers=["X-Session-Token"],
 )
 
+# --- Rate limiting -----------------------------------------------------
+# Ningún endpoint público (lookup por cédula, formularios de contacto,
+# pre-test, asistencia, login del panel) pedía nada más que ese dato para
+# responder — sin esto, un script podía golpearlos sin límite. Los límites
+# son por IP y deliberadamente generosos: el evento presencial pasa por la
+# red aislada de la Raspberry Pi (ver dispositivo.py), no por esta API
+# pública, así que aquí no hay que absorber una ráfaga sincronizada de
+# ~1500 personas — solo frenar un script, no a varias personas reales
+# detrás del mismo NAT/WiFi institucional llenando el formulario a la vez.
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 
 class RespuestaIn(BaseModel):
     nombre: str = Field(min_length=3, max_length=120)
@@ -247,7 +265,8 @@ async def catalogos():
 
 
 @app.get("/v1/personal/{cedula}")
-async def buscar_personal(cedula: str):
+@limiter.limit("60/minute")
+async def buscar_personal(request: Request, cedula: str):
     """Lookup de solo lectura contra el roster `personal` (RR.HH.) por cédula.
 
     Sirve para que el frontend decida el siguiente paso:
@@ -287,7 +306,8 @@ async def buscar_personal(cedula: str):
 
 
 @app.get("/v1/pre-test/{cedula}")
-async def buscar_pre_test(cedula: str):
+@limiter.limit("60/minute")
+async def buscar_pre_test(request: Request, cedula: str):
     """Lookup para pre-test-induccion2026.html: mismo criterio de `completo`
     que /v1/personal, más `respondio` (ya existe una fila en `pre_test` para
     la campaña activa). El frontend usa esto para decidir qué mostrar:
@@ -383,7 +403,8 @@ class PersonalContactoIn(BaseModel):
 
 
 @app.post("/v1/personal", status_code=200)
-async def guardar_personal(payload: PersonalContactoIn):
+@limiter.limit("60/minute")
+async def guardar_personal(request: Request, payload: PersonalContactoIn):
     p = await db.pool()
     await upsertar_personal(
         p, int(payload.cedula), payload.nombre, payload.cargo,
@@ -417,7 +438,8 @@ class PreTestIn(BaseModel):
 
 
 @app.post("/v1/pre-test", status_code=201)
-async def guardar_pre_test(payload: PreTestIn):
+@limiter.limit("60/minute")
+async def guardar_pre_test(request: Request, payload: PreTestIn):
     p = await db.pool()
 
     if payload.respuestas:
@@ -491,6 +513,7 @@ class AsistenciaIn(BaseModel):
 
 
 @app.post("/v1/asistencia", status_code=201)
+@limiter.limit("20/minute")
 async def registrar_asistencia(payload: AsistenciaIn, request: Request):
     """Guarda un registro de asistencia. Bloquea un segundo registro con
     cédula distinta desde el mismo dispositivo (misma MAC en la red local),
@@ -866,7 +889,8 @@ async def admin_actual(authorization: str = Header(default="")) -> str:
 
 
 @app.post("/v1/admin/login")
-async def admin_login(payload: LoginIn):
+@limiter.limit("5/minute")
+async def admin_login(request: Request, payload: LoginIn):
     if not cfg.jwt_secret:
         raise HTTPException(status_code=404)
 
