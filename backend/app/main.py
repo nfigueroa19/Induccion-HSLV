@@ -77,6 +77,14 @@ CORRECCIONES_CATALOGO = {
     "terapeuta respitatorio": "Terapeuta Respiratorio",
 }
 
+# Valores que siguen en `personal` (no se borra el dato de nadie) pero que no
+# deben ofrecerse en los <select>, p. ej. un error de tipeo escrito en "Otra...".
+# Misma normalización que CORRECCIONES_CATALOGO.
+CATALOGO_OCULTO = {
+    "aministrativo",
+    "administrativo",
+}
+
 # Entidades/sindicatos que sabemos que existen (ver formulario de inscripción
 # a reinducción 2026) pero de las que todavía nadie en `personal` tiene esa
 # entidad registrada, así que _valores_columna aún no las vería. Se agregan a
@@ -234,6 +242,8 @@ async def _valores_columna(columna: str) -> list[str]:
     for f in filas:
         valor = re.sub(r"\s+", " ", f["v"].strip())
         clave = _clave_normalizada(valor)
+        if clave in CATALOGO_OCULTO:
+            continue
         if clave in CORRECCIONES_CATALOGO:
             valor = CORRECCIONES_CATALOGO[clave]
             clave = _clave_normalizada(valor)
