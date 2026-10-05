@@ -328,3 +328,20 @@ tbody td { padding: 12px; border-bottom: 1px solid var(--color-border); white-sp
 .site-footer-contacto a:hover,
 .site-footer-legal a:hover { text-decoration: underline; }
 }
+
+/* --- Etiqueta "Sin salón" de la columna Inscripción --- */
+.etiqueta-sin-salon { background: var(--estado-pendiente); }
+.etiqueta-origen-rrhh { background: var(--color-navy); }
+.etiqueta-origen-autorregistro { background: var(--estado-procesando); }
+
+/* Barra de scroll horizontal espejo, arriba de la tabla de diagnóstico:
+   sticky para que siga visible mientras se baja por las filas. */
+.scroll-superior {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--color-bg);
+}
+.scroll-superior > div { height: 1px; }

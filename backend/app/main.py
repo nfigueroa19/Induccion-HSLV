@@ -975,8 +975,29 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
         cfg.campana, cfg.clave_datos,
     )
 
+    # Inscripción a la reinducción (`pre_test`): puntaje del pre-test y
+    # día/horario/salón elegidos. Se cruza por cédula en Python porque
+    # `respuestas` guarda la cédula cifrada y `pre_test` en claro.
+    inscritos = await p.fetch(
+        """
+        select pt.cedula, pt.puntuacion, pt.dia, pt.horario, pt.salon, pt.creado_en,
+               pe.nombre_completo as nombre, pe.cargo, pe.proceso as servicio,
+               pe.perfil as perfil_profesional, pe.entidad, pe.telefono,
+               pe.email_institucional, pe.email_secundario, pe.origen as origen_personal
+          from pre_test pt
+          left join personal pe on pe.cedula = pt.cedula
+         where pt.campana = $1
+        """,
+        cfg.campana,
+    )
+    inscripcion_por_cedula = {str(i["cedula"]): i for i in inscritos}
+
     filas_json = []
+    cedulas_con_diagnostico = set()
     for f in filas:
+        clave_cedula = str(int(f["cedula"])) if str(f["cedula"]).isdigit() else str(f["cedula"])
+        cedulas_con_diagnostico.add(clave_cedula)
+        insc = inscripcion_por_cedula.get(clave_cedula)
         componentes = []
         if f["payload"] is not None:
             payload = json.loads(f["payload"])
@@ -1010,9 +1031,47 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "email_institucional": f["email_institucional"],
             "email_secundario": f["email_secundario"],
             "origen_personal": f["origen_personal"],
+            "puntaje_pretest": insc["puntuacion"] if insc else None,
+            "dia": insc["dia"] if insc else None,
+            "horario": insc["horario"] if insc else None,
+            "salon": insc["salon"] if insc else None,
+        })
+
+    # Quien se inscribió (pre-test) pero aún no tiene diagnóstico también
+    # aparece, con estado/porcentaje vacíos, para que el panel vea toda la
+    # inscripción y no solo a quien ya hizo el diagnóstico.
+    for cedula, i in inscripcion_por_cedula.items():
+        if cedula in cedulas_con_diagnostico:
+            continue
+        filas_json.append({
+            "nombre": i["nombre"] or "— (sin ficha en personal)",
+            "cedula": cedula,
+            "area": None,
+            "perfil": None,
+            "estado": None,
+            "porcentaje": None,
+            "nivel": None,
+            "componentes": [],
+            "creado_en": i["creado_en"].isoformat(),
+            "cargo": i["cargo"],
+            "servicio": i["servicio"],
+            "perfil_profesional": i["perfil_profesional"],
+            "entidad": i["entidad"],
+            "telefono": i["telefono"],
+            "email_institucional": i["email_institucional"],
+            "email_secundario": i["email_secundario"],
+            "origen_personal": i["origen_personal"],
+            "puntaje_pretest": i["puntuacion"],
+            "dia": i["dia"],
+            "horario": i["horario"],
+            "salon": i["salon"],
         })
 
     return JSONResponse(
-        content={"campana": cfg.campana, "respuestas": filas_json},
+        content={
+            "campana": cfg.campana,
+            "total_preguntas_pretest": len(CLAVE_PRE_TEST),
+            "respuestas": filas_json,
+        },
         headers={"X-Session-Token": _firmar_token(usuario)},
     )

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Panel de jefes de servicio — ADN Susana</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
-<link rel="stylesheet" href="css/panel.css?v=20260927e" />
+<link rel="stylesheet" href="css/panel.css?v=20261005c" />
 </head>
 <body>
 <div class="panel">
@@ -35,12 +35,36 @@
           <span class="resumen-valor" id="resumen-promedio">—</span>
           <span class="resumen-etiqueta">promedio general</span>
         </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-con-salon">—</span>
+          <span class="resumen-etiqueta">ya eligieron salón y horario</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-sin-salon">—</span>
+          <span class="resumen-etiqueta">sin salón todavía</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-autorregistro">—</span>
+          <span class="resumen-etiqueta">autorregistro</span>
+        </div>
       </div>
 
       <div class="filtros">
         <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre, cédula, cargo, proceso o perfil…" autocomplete="off" />
         <select id="filtro-proceso"><option value="">Todos los procesos</option></select>
         <select id="filtro-entidad"><option value="">Todas las entidades</option></select>
+        <select id="filtro-inscripcion">
+          <option value="">Inscripción: todos</option>
+          <option value="con">Ya eligió salón</option>
+          <option value="sin">Sin salón</option>
+        </select>
+        <select id="filtro-dia"><option value="">Todos los días</option></select>
+        <select id="filtro-salon"><option value="">Todos los salones</option></select>
+        <select id="filtro-origen">
+          <option value="">Todos los orígenes</option>
+          <option value="rrhh">Roster RR.HH.</option>
+          <option value="autorregistro">Autorregistro</option>
+        </select>
         <select id="filtro-estado">
           <option value="">Todos los estados</option>
           <option value="listo">Listo</option>
@@ -70,7 +94,8 @@
         </ol>
       </details>
 
-      <div class="tabla-wrap">
+      <div class="scroll-superior" id="scroll-superior" aria-hidden="true"><div></div></div>
+      <div class="tabla-wrap" id="tabla-wrap">
         <table id="tabla-respuestas">
           <thead>
             <tr>
@@ -79,9 +104,12 @@
               <th>Cargo</th>
               <th>Proceso</th>
               <th>Perfil</th>
+              <th>Puntaje Pre-Test</th>
               <th>Entidad</th>
+              <th>Inscripción</th>
               <th>Estado</th>
               <th>% global</th>
+              <th>Origen</th>
               <th></th>
             </tr>
           </thead>
@@ -103,6 +131,6 @@
 
 </div>
 
-<script src="js/gestion-interna.js"></script>
+<script src="js/gestion-interna.js?v=20261005c"></script>
 </body>
 </html>

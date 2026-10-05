@@ -23,8 +23,16 @@ const filtroProceso = document.getElementById('filtro-proceso');
 const filtroEntidad = document.getElementById('filtro-entidad');
 const filtroEstado = document.getElementById('filtro-estado');
 const filtroPct = document.getElementById('filtro-pct');
+const filtroInscripcion = document.getElementById('filtro-inscripcion');
+const filtroDia = document.getElementById('filtro-dia');
+const filtroSalon = document.getElementById('filtro-salon');
+const filtroOrigen = document.getElementById('filtro-origen');
+
+const DIAS_TEXTO = { '2026-10-13': 'Mar 13 oct', '2026-10-14': 'Mié 14 oct' };
+const HORARIOS_TEXTO = { '7:30': '7:30 a.m.', '13:30': '1:30 p.m.' };
 
 let datos = [];
+let totalPreguntasPretest = 0;
 let filaAbierta = null;
 
 // Sesión deslizante: cualquier interacción real reinicia el reloj de
@@ -65,8 +73,10 @@ async function cargar() {
 
     const json = await r.json();
     datos = json.respuestas;
+    totalPreguntasPretest = json.total_preguntas_pretest || 0;
     poblarFiltroProceso();
     poblarFiltroEntidad();
+    poblarFiltroInscripcion();
     dibujar();
   } catch {
     cargandoTabla.textContent = 'No se pudo cargar la información. Intenta recargar la página.';
@@ -108,7 +118,32 @@ function poblarFiltroEntidad() {
   filtroEntidad.dataset.poblado = '1';
 }
 
-[filtroBusqueda, filtroProceso, filtroEntidad, filtroEstado, filtroPct].forEach((el) =>
+// Día y salón: valores que de verdad existen en las inscripciones, así el
+// desplegable no ofrece combinaciones que nadie eligió.
+function poblarFiltroInscripcion() {
+  if (filtroDia.dataset.poblado) return;
+  const llenar = (select, valores, etiqueta) => {
+    [...new Set(valores.filter(Boolean))].sort().forEach((v) => {
+      const op = document.createElement('option');
+      op.value = v;
+      op.textContent = etiqueta(v);
+      select.appendChild(op);
+    });
+  };
+  llenar(filtroDia, datos.map((d) => d.dia), (v) => DIAS_TEXTO[v] || v);
+  llenar(filtroSalon, datos.map((d) => d.salon), capitalizar);
+  filtroDia.dataset.poblado = '1';
+}
+
+const capitalizar = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+
+function textoInscripcion(d) {
+  if (!d.salon) return '';
+  return `${DIAS_TEXTO[d.dia] || d.dia} · ${HORARIOS_TEXTO[d.horario] || d.horario} · ${capitalizar(d.salon)}`;
+}
+
+[filtroBusqueda, filtroProceso, filtroEntidad, filtroEstado, filtroPct,
+  filtroInscripcion, filtroDia, filtroSalon, filtroOrigen].forEach((el) =>
   el.addEventListener('input', dibujar));
 
 function filtrar() {
@@ -119,6 +154,11 @@ function filtrar() {
     if (filtroProceso.value && d.servicio !== filtroProceso.value) return false;
     if (filtroEntidad.value && d.entidad !== filtroEntidad.value) return false;
     if (filtroEstado.value && d.estado !== filtroEstado.value) return false;
+    if (filtroInscripcion.value === 'con' && !d.salon) return false;
+    if (filtroInscripcion.value === 'sin' && d.salon) return false;
+    if (filtroOrigen.value && d.origen_personal !== filtroOrigen.value) return false;
+    if (filtroDia.value && d.dia !== filtroDia.value) return false;
+    if (filtroSalon.value && d.salon !== filtroSalon.value) return false;
     // Busca en todas las columnas de texto visibles, no solo nombre/cédula:
     // con 6 columnas ya no alcanza con dos campos, y un jefe de servicio
     // puede no saber en qué columna exacta está el dato que recuerda (p.ej.
@@ -160,6 +200,12 @@ function dibujar() {
   resumenPromedio.textContent = listos.length
     ? `${Math.round(listos.reduce((acc, d) => acc + d.porcentaje, 0) / listos.length)}%`
     : '—';
+  const conSalon = datos.filter((d) => d.salon).length;
+  document.getElementById('resumen-con-salon').textContent = datos.length ? conSalon : '—';
+  document.getElementById('resumen-sin-salon').textContent = datos.length ? datos.length - conSalon : '—';
+  document.getElementById('resumen-autorregistro').textContent = datos.length
+    ? datos.filter((d) => d.origen_personal === 'autorregistro').length
+    : '—';
 
   cuerpoTabla.innerHTML = '';
   vacioTabla.hidden = filas.length > 0;
@@ -174,9 +220,12 @@ function dibujar() {
       <td>${escapar(d.cargo || '—')}</td>
       <td>${escapar(d.servicio || '—')}</td>
       <td>${escapar(d.perfil_profesional || '—')}</td>
+      <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
       <td>${escapar(d.entidad || '—')}</td>
-      <td><span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span></td>
+      <td>${d.salon ? escapar(textoInscripcion(d)) : '<span class="etiqueta-estado etiqueta-sin-salon">Sin salón</span>'}</td>
+      <td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
+      <td>${etiquetaOrigen(d.origen_personal)}</td>
       <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>
     `;
     if (d.componentes.length) {
@@ -200,7 +249,7 @@ function alternarDetalle(tr, d) {
   const detalle = document.createElement('tr');
   detalle.className = 'fila-detalle';
   detalle.innerHTML = `
-    <td colspan="9">
+    <td colspan="12">
       <div class="componentes-grid">
         ${d.componentes.map((c) => `
           <div class="componente-item">
@@ -221,8 +270,40 @@ function etiquetaEstado(estado) {
   }[estado] || estado;
 }
 
+function etiquetaOrigen(origen) {
+  if (!origen) return '—';
+  const texto = origen === 'autorregistro' ? 'Autorregistro' : 'RR.HH.';
+  return `<span class="etiqueta-estado etiqueta-origen-${origen}">${texto}</span>`;
+}
+
 function escapar(texto) {
   const div = document.createElement('div');
   div.textContent = texto ?? '';
   return div.innerHTML;
 }
+
+// Scroll horizontal espejo arriba de la tabla: con cientos de filas la barra
+// nativa de abajo queda lejísimos. Las dos barras se mantienen sincronizadas.
+(() => {
+  const arriba = document.getElementById('scroll-superior');
+  const tabla = document.getElementById('tabla-wrap');
+  const relleno = arriba.firstElementChild;
+  let sincronizando = false;
+
+  const ajustar = () => {
+    relleno.style.width = `${tabla.scrollWidth}px`;
+    arriba.hidden = tabla.scrollWidth <= tabla.clientWidth;
+  };
+  const espejo = (origen, destino) => origen.addEventListener('scroll', () => {
+    if (sincronizando) return;
+    sincronizando = true;
+    destino.scrollLeft = origen.scrollLeft;
+    sincronizando = false;
+  }, { passive: true });
+
+  espejo(arriba, tabla);
+  espejo(tabla, arriba);
+  new ResizeObserver(ajustar).observe(tabla);
+  new MutationObserver(ajustar).observe(document.getElementById('cuerpo-tabla'), { childList: true });
+  ajustar();
+})();
