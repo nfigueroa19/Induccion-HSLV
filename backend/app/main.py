@@ -99,6 +99,15 @@ PROCESOS_EXTRA = [
     "UCINT",
 ]
 
+# Entidades que alguien escribió como proceso: siguen en `personal` pero no se
+# ofrecen en el <select> de procesos (sí siguen en el de entidades). Misma
+# normalización que CORRECCIONES_CATALOGO.
+PROCESOS_OCULTOS = {
+    "asies",
+    "integral salud de colombia s.a.s",
+    "integral salud de colombia sas",
+}
+
 # Clave de respuestas del pre-test (21 preguntas), recuperada de las 163
 # personas con puntaje perfecto (21/21) entre las 1132 filas migradas del
 # Google Forms original — todas coinciden al 100% en cada pregunta, así que
@@ -226,7 +235,7 @@ def _clave_normalizada(valor: str) -> str:
     return sin_tildes
 
 
-async def _valores_columna(columna: str) -> list[str]:
+async def _valores_columna(columna: str, ocultos: frozenset[str] | set[str] = frozenset()) -> list[str]:
     """Valores distintos de una columna de texto en `personal`, deduplicados
     sin distinguir mayúsculas/tildes/espacios (se conserva la grafía más
     frecuente como canónica, salvo que haya una corrección puntual en
@@ -242,7 +251,7 @@ async def _valores_columna(columna: str) -> list[str]:
     for f in filas:
         valor = re.sub(r"\s+", " ", f["v"].strip())
         clave = _clave_normalizada(valor)
-        if clave in CATALOGO_OCULTO:
+        if clave in CATALOGO_OCULTO or clave in ocultos:
             continue
         if clave in CORRECCIONES_CATALOGO:
             valor = CORRECCIONES_CATALOGO[clave]
@@ -266,7 +275,7 @@ async def catalogos():
     "Otra..." en el frontend para texto libre, por si el valor real todavía
     no está en el roster."""
     entidades = sorted(set(await _valores_columna("entidad")) | set(ENTIDADES_EXTRA))
-    procesos = sorted(set(await _valores_columna("proceso")) | set(PROCESOS_EXTRA))
+    procesos = sorted(set(await _valores_columna("proceso", PROCESOS_OCULTOS)) | set(PROCESOS_EXTRA))
     return {
         "cargos": await _valores_columna("cargo"),
         "procesos": procesos,
