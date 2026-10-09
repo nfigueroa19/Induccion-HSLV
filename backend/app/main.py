@@ -512,6 +512,93 @@ async def guardar_pre_test(request: Request, payload: PreTestIn):
     return {"ok": True}
 
 
+@app.get("/v1/post-test/{cedula}")
+@limiter.limit("60/minute")
+async def buscar_post_test(request: Request, cedula: str):
+    """Lookup para cierre.html (post-test). Mismo criterio de `completo` que
+    /v1/pre-test, más `respondio` (ya hay fila en `post_test`)."""
+    limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
+    if not limpia.isdigit():
+        raise HTTPException(status_code=422, detail="La cédula debe contener solo números.")
+
+    p = await db.pool()
+    fila = await p.fetchrow(
+        """
+        select nombre_completo, cargo, proceso, entidad,
+               (email_institucional is not null or email_secundario is not null) as tiene_correo,
+               po.puntuacion as puntuacion
+          from personal
+          left join post_test po on po.cedula = personal.cedula and po.campana = $2
+         where personal.cedula = $1
+        """,
+        int(limpia), cfg.campana,
+    )
+    if fila is None:
+        return {"existe": False, "completo": False, "respondio": False}
+    return {
+        "existe": True,
+        "completo": fila["entidad"] is not None and fila["tiene_correo"],
+        "respondio": fila["puntuacion"] is not None,
+        "puntuacion": fila["puntuacion"],
+        "nombre": fila["nombre_completo"],
+        "cargo": fila["cargo"],
+        "proceso": fila["proceso"],
+        "entidad": fila["entidad"],
+    }
+
+
+class PostTestIn(BaseModel):
+    """Envío del cuestionario de cierre (cierre.html). Mismas claves
+    `pregunta_01..21` que el pre-test, calificadas con CLAVE_PRE_TEST."""
+    cedula: str = Field(min_length=5, max_length=15)
+    respuestas: dict[str, str | None]
+
+    @field_validator("cedula")
+    @classmethod
+    def solo_digitos(cls, v: str) -> str:
+        limpia = v.replace(".", "").replace(" ", "").replace("-", "").strip()
+        if not limpia.isdigit():
+            raise ValueError("La cédula debe contener solo números.")
+        return limpia
+
+
+@app.post("/v1/post-test", status_code=201)
+@limiter.limit("60/minute")
+async def guardar_post_test(request: Request, payload: PostTestIn):
+    faltantes = CLAVE_PRE_TEST.keys() - payload.respuestas.keys()
+    if faltantes:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Faltan respuestas: {', '.join(sorted(faltantes))}",
+        )
+    puntuacion = sum(
+        1 for pregunta, correcta in CLAVE_PRE_TEST.items()
+        if payload.respuestas.get(pregunta) == correcta
+    )
+    columnas = sorted(CLAVE_PRE_TEST.keys())
+    valores = [payload.respuestas[c] for c in columnas]
+    placeholders = ", ".join(f"${i}" for i in range(4, 4 + len(columnas)))
+
+    p = await db.pool()
+    # El primer envío es el que cuenta: si ya había fila, se devuelve su
+    # puntaje sin reemplazarla (evita reintentar hasta acertar).
+    fila = await p.fetchrow(
+        f"""
+        insert into post_test (campana, cedula, puntuacion, {", ".join(columnas)})
+        values ($1, $2, $3, {placeholders})
+        on conflict (campana, cedula) do nothing
+        returning puntuacion
+        """,
+        cfg.campana, int(payload.cedula), puntuacion, *valores,
+    )
+    if fila is None:
+        fila = await p.fetchrow(
+            "select puntuacion from post_test where campana = $1 and cedula = $2",
+            cfg.campana, int(payload.cedula),
+        )
+    return {"ok": True, "puntuacion": fila["puntuacion"]}
+
+
 class AsistenciaIn(BaseModel):
     cedula: str = Field(min_length=5, max_length=15)
     encontrado: bool
