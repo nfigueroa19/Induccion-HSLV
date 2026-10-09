@@ -4,16 +4,3 @@
 # — de hecho, agregar una regla 200 explícita para esos mismos paths choca
 # con ese comportamiento nativo y produce un bucle de redirección 308 sobre
 # sí mismo (encontrado y corregido 2026-09-14, ver minuta).
-
-# TEMPORAL (agregado 2026-09-27) — mientras el diagnóstico ADN Susana y los
-# indicadores no están listos para el público, todo el sitio (excepto lo que
-# corre aparte en la Raspberry Pi el día del evento, y excepto /login y
-# /gestion-interna) redirige a /inscripcion. RECORDATORIO: quitar estas 6
-# líneas cuando el diagnóstico esté listo para abrirse al público.
-/                              /inscripcion  302
-/index                         /inscripcion  302
-/index.html                    /inscripcion  302
-/dashboard                     /inscripcion  302
-/dashboard.html                /inscripcion  302
-/pre-test-induccion2026        /inscripcion  301
-/pre-test-induccion2026.html   /inscripcion  301
