@@ -260,6 +260,14 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  // `required` del checkbox no lo hacen cumplir todos los navegadores
+  // embebidos (WhatsApp, Facebook, etc.): se valida también aquí.
+  if (!document.getElementById('autorizacion').checked) {
+    status.textContent = 'Para continuar debes aceptar la autorización de tratamiento de datos.';
+    document.getElementById('autorizacion').focus();
+    return;
+  }
+
   boton.disabled = true;
   status.textContent = 'Enviando tu respuesta...';
 
@@ -282,7 +290,7 @@ form.addEventListener('submit', async (e) => {
     if (r.status === 202) {
       const data = await r.json();
 
-      if (data.duplicado) {
+      if (data.duplicado && !data.id) {
         status.textContent = 'Ya teníamos tu respuesta registrada. ¡Gracias!';
         textarea.disabled = true;
         return;
@@ -292,6 +300,7 @@ form.addEventListener('submit', async (e) => {
       form.reset();
       contador.textContent = '0';
       textarea.disabled = true;
+      guardarPendiente(data.id);
       abrirModal();
       esperarDiagnostico(data.id);
       return;
@@ -316,6 +325,28 @@ form.addEventListener('submit', async (e) => {
 // Espera del diagnóstico
 // ---------------------------------------------------------------------------
 
+// El id de la respuesta en espera se recuerda en el navegador: si la pestaña se
+// recarga o el celular la descarta mientras se genera el diagnóstico, al volver
+// se retoma la espera en vez de dejar a la persona en el paso inicial.
+const CLAVE_PENDIENTE = 'hslv_diagnostico_pendiente';
+const VIGENCIA_PENDIENTE_MS = 30 * 60 * 1000;
+
+function guardarPendiente(id) {
+  try { localStorage.setItem(CLAVE_PENDIENTE, JSON.stringify({ id, ts: Date.now() })); } catch {}
+}
+
+function limpiarPendiente() {
+  try { localStorage.removeItem(CLAVE_PENDIENTE); } catch {}
+}
+
+function leerPendiente() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAVE_PENDIENTE) || 'null');
+    if (v && v.id && Date.now() - v.ts < VIGENCIA_PENDIENTE_MS) return v.id;
+  } catch {}
+  return null;
+}
+
 function abrirModal() {
   paneResultado.hidden = true;
   paneError.hidden = true;
@@ -332,7 +363,7 @@ function abrirModal() {
   }
 }
 
-function mostrarPane(pane) {
+function mostrarPane(pane, demora = false) {
   paneCargando.hidden = true;
   paneResultado.hidden = pane !== paneResultado;
   paneError.hidden = pane !== paneError;
@@ -340,6 +371,9 @@ function mostrarPane(pane) {
   // En el resultado, "Realizar Post-Test" sustituye a "Cerrar".
   btnCerrarModal.hidden = pane === paneResultado;
   esperandoDiagnostico = false;
+  // En un error por demora (la respuesta sigue en cola) se conserva el id para
+  // que al recargar se vuelva a consultar.
+  if (!demora) limpiarPendiente();
 }
 
 // Advertencia nativa del navegador si intenta recargar o cerrar la pestaña
@@ -384,13 +418,23 @@ async function esperarDiagnostico(id) {
   }
 
   mostrarError('Tu diagnóstico está tardando más de lo normal. Tu respuesta ya ' +
-    'quedó guardada y lo recibirás apenas esté listo.');
+    'quedó guardada y lo recibirás apenas esté listo.', true);
 }
 
-function mostrarError(mensaje) {
+function mostrarError(mensaje, demora = false) {
   if (mensaje) document.getElementById('txt-error').textContent = mensaje;
-  mostrarPane(paneError);
+  mostrarPane(paneError, demora);
 }
+
+// Retoma la espera si la página se recargó con un diagnóstico en camino.
+(function retomarPendiente() {
+  const id = leerPendiente();
+  if (!id) return;
+  textarea.disabled = true;
+  boton.disabled = true;
+  abrirModal();
+  esperarDiagnostico(id);
+})();
 
 // ---------------------------------------------------------------------------
 // Render
@@ -487,7 +531,7 @@ function animarCifra(nodo, destino, duracion) {
 // Evita que el navegador conserve valores escritos si la página se
 // restaura desde la caché de retroceso (bfcache) del historial.
 window.addEventListener('pageshow', (e) => {
-  if (e.persisted) {
+  if (e.persisted && !esperandoDiagnostico) {
     formCedula.reset();
     statusCedula.textContent = '';
     cedulaConfirmada = '';
