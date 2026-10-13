@@ -15,7 +15,6 @@ const SESION_INACTIVIDAD_MS = 15 * 60 * 1000;
 const cuerpoTabla = document.getElementById('cuerpo-tabla');
 const vacioTabla = document.getElementById('vacio-tabla');
 const cargandoTabla = document.getElementById('cargando-tabla');
-const resumenTotal = document.getElementById('resumen-total');
 const resumenListos = document.getElementById('resumen-listos');
 const resumenPromedio = document.getElementById('resumen-promedio');
 const filtroBusqueda = document.getElementById('filtro-busqueda');
@@ -142,6 +141,18 @@ function textoInscripcion(d) {
   return `${DIAS_TEXTO[d.dia] || d.dia} · ${HORARIOS_TEXTO[d.horario] || d.horario} · ${capitalizar(d.salon)}`;
 }
 
+// Fecha y hora del registro en la Pi, siempre en hora de Colombia (el backend
+// manda el instante en ISO con zona).
+const FORMATO_ASISTENCIA = new Intl.DateTimeFormat('es-CO', {
+  timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', hour12: true,
+});
+function textoAsistencia(iso) {
+  if (!iso) return '—';
+  const f = new Date(iso);
+  return Number.isNaN(f.getTime()) ? '—' : FORMATO_ASISTENCIA.format(f);
+}
+
 [filtroBusqueda, filtroProceso, filtroEntidad, filtroEstado, filtroPct,
   filtroInscripcion, filtroDia, filtroSalon, filtroOrigen].forEach((el) =>
   el.addEventListener('input', dibujar));
@@ -166,7 +177,7 @@ function filtrar() {
     // Se compara palabra por palabra (todas deben aparecer, en cualquier
     // orden) para que "diego castro" encuentre "Diego Felipe Castro Jordán".
     if (q) {
-      const bolsa = `${d.nombre} ${d.cedula} ${d.cargo || ''} ${d.servicio || ''} ${d.perfil_profesional || ''} ${d.entidad || ''}`.toLowerCase();
+      const bolsa = `${d.nombre} ${d.cedula} ${d.cargo || ''} ${d.servicio || ''} ${d.entidad || ''}`.toLowerCase();
       const palabras = q.split(/\s+/).filter(Boolean);
       if (!palabras.every((palabra) => bolsa.includes(palabra))) return false;
     }
@@ -194,7 +205,6 @@ function dibujar() {
   cargandoTabla.hidden = true;
   const filas = filtrar();
 
-  resumenTotal.textContent = datos.length || '—';
   const listos = datos.filter((d) => d.porcentaje != null);
   resumenListos.textContent = listos.length || '—';
   resumenPromedio.textContent = listos.length
@@ -202,7 +212,9 @@ function dibujar() {
     : '—';
   const conSalon = datos.filter((d) => d.salon).length;
   document.getElementById('resumen-con-salon').textContent = datos.length ? conSalon : '—';
-  document.getElementById('resumen-sin-salon').textContent = datos.length ? datos.length - conSalon : '—';
+  document.getElementById('resumen-asistencia').textContent = datos.length
+    ? datos.filter((d) => d.asistencia_en).length
+    : '—';
   document.getElementById('resumen-autorregistro').textContent = datos.length
     ? datos.filter((d) => d.origen_personal === 'autorregistro').length
     : '—';
@@ -219,10 +231,11 @@ function dibujar() {
       <td>${escapar(d.cedula)}</td>
       <td>${escapar(d.cargo || '—')}</td>
       <td>${escapar(d.servicio || '—')}</td>
-      <td>${escapar(d.perfil_profesional || '—')}</td>
-      <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
-      <td>${escapar(d.entidad || '—')}</td>
       <td>${d.salon ? escapar(textoInscripcion(d)) : '<span class="etiqueta-estado etiqueta-sin-salon">Sin salón</span>'}</td>
+      <td>${escapar(textoAsistencia(d.asistencia_en))}</td>
+      <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
+      <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${totalPreguntasPretest}` : '—'}</td>
+      <td>${escapar(d.entidad || '—')}</td>
       <td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
       <td>${etiquetaOrigen(d.origen_personal)}</td>
@@ -249,7 +262,7 @@ function alternarDetalle(tr, d) {
   const detalle = document.createElement('tr');
   detalle.className = 'fila-detalle';
   detalle.innerHTML = `
-    <td colspan="12">
+    <td colspan="13">
       <div class="componentes-grid">
         ${d.componentes.map((c) => `
           <div class="componente-item">

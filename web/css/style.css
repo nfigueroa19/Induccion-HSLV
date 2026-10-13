@@ -344,7 +344,8 @@ textarea {
   outline-offset: 2px;
 }
 
-button.submit {
+button.submit, a.submit {
+  text-decoration: none;
   display: block;
   width: 100%;
   text-align: center;
@@ -361,12 +362,12 @@ button.submit {
               box-shadow var(--duration-quick) var(--ease-out),
               opacity var(--duration-quick) var(--ease-out);
 }
-button.submit:hover:not([disabled]) {
+button.submit:hover:not([disabled]), a.submit:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(50, 117, 49, 0.28);
 }
-button.submit:active { transform: scale(0.99); transition-duration: var(--duration-micro); }
-button.submit:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+button.submit:active, a.submit:active { transform: scale(0.99); transition-duration: var(--duration-micro); }
+button.submit:focus-visible, a.submit:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .status {
   font-size: 13px;
@@ -598,7 +599,7 @@ button.submit[disabled] {
   margin: 18px 0 !important;
 }
 
-#cerrar-modal { margin-top: 18px; }
+#cerrar-modal, #btn-posttest { margin-top: 18px; }
 
 /* Los niveles cualitativos traen palabras largas ("descubrimiento") que en
    pantallas angostas se salen de la tarjeta. */
@@ -722,4 +723,28 @@ button.submit[disabled] {
   }
   .gauge-fill { transition: none; }
   .pulso .gauge-base { animation: none; opacity: 0.6; }
+}
+
+/* ---------------------------------------------------------------------------
+   Escritorio — el layout es mobile-first (tarjeta angosta pensada para el QR
+   desde el celular). En pantallas anchas esa misma tarjeta queda pegada a la
+   izquierda con medio viewport en blanco; aquí se la ensancha un poco y se le
+   da tratamiento de tarjeta flotante sobre un fondo tenue en vez de dejarla
+   perdida en blanco.
+   --------------------------------------------------------------------------- */
+@media (min-width: 720px) {
+  body { background: var(--color-field-bg); }
+  .page {
+    max-width: 640px;
+    margin: 32px auto;
+    min-height: calc(100vh - 64px);
+    background: var(--color-bg);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(22, 36, 26, 0.12);
+    overflow: hidden;
+  }
+  .topbar { padding: 22px 32px 18px; }
+  main { padding: 34px 36px 28px; }
+  h1 { font-size: 30px; }
+  .anuncio-card { padding: 24px 30px; }
 }

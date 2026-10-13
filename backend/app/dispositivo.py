@@ -19,7 +19,28 @@ _PATRON_IP_NEIGH = re.compile(
 )
 
 
+def _mac_desde_proc_arp(ip: str) -> str | None:
+    """Linux: lee /proc/net/arp directamente (sin lanzar un subproceso, que
+    bloqueaba el event loop bajo ráfagas de registros)."""
+    try:
+        with open("/proc/net/arp", encoding="ascii") as f:
+            next(f, None)  # encabezado
+            for linea in f:
+                partes = linea.split()
+                # IP, HW type, Flags, HW address, Mask, Device
+                if len(partes) >= 4 and partes[0] == ip and partes[3] != "00:00:00:00:00:00":
+                    return partes[3].lower()
+    except OSError:
+        return None
+    return None
+
+
 def mac_desde_ip(ip: str) -> str | None:
+    if sys.platform.startswith("linux"):
+        mac = _mac_desde_proc_arp(ip)
+        if mac:
+            return mac
+
     if sys.platform.startswith("win"):
         comando = ["arp", "-a"]
         patron = _PATRON_ARP_WINDOWS

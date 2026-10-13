@@ -1088,6 +1088,35 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
     )
     inscripcion_por_cedula = {str(i["cedula"]): i for i in inscritos}
 
+    # Puntaje del post-test (cierre.html), también por cédula en claro.
+    post_puntajes = {
+        str(r["cedula"]): r["puntuacion"]
+        for r in await p.fetch(
+            "select cedula, puntuacion from post_test where campana = $1",
+            cfg.campana,
+        )
+    }
+
+    # Hora del registro de asistencia (asistencia.html desde la Pi). La cédula
+    # ahí es texto; se normaliza como el resto de claves de este cruce.
+    asistentes = await p.fetch(
+        """
+        select a.cedula, a.creado_en, a.nombre as nombre_asistencia,
+               pe.nombre_completo as nombre, pe.cargo, pe.proceso as servicio,
+               pe.perfil as perfil_profesional, pe.entidad, pe.telefono,
+               pe.email_institucional, pe.email_secundario, pe.origen as origen_personal
+          from asistencia a
+          left join personal pe on pe.cedula::text = a.cedula
+         where a.campana = $1
+        """,
+        cfg.campana,
+    )
+    asistencia_por_cedula = {
+        (str(int(r["cedula"])) if str(r["cedula"]).isdigit() else str(r["cedula"])):
+            r["creado_en"].isoformat()
+        for r in asistentes
+    }
+
     filas_json = []
     cedulas_con_diagnostico = set()
     for f in filas:
@@ -1128,6 +1157,8 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "email_secundario": f["email_secundario"],
             "origen_personal": f["origen_personal"],
             "puntaje_pretest": insc["puntuacion"] if insc else None,
+            "puntaje_posttest": post_puntajes.get(clave_cedula),
+            "asistencia_en": asistencia_por_cedula.get(clave_cedula),
             "dia": insc["dia"] if insc else None,
             "horario": insc["horario"] if insc else None,
             "salon": insc["salon"] if insc else None,
@@ -1158,9 +1189,43 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "email_secundario": i["email_secundario"],
             "origen_personal": i["origen_personal"],
             "puntaje_pretest": i["puntuacion"],
+            "puntaje_posttest": post_puntajes.get(cedula),
+            "asistencia_en": asistencia_por_cedula.get(cedula),
             "dia": i["dia"],
             "horario": i["horario"],
             "salon": i["salon"],
+        })
+
+    # Quien marcó asistencia en la Pi pero no tiene diagnóstico ni inscripción
+    # también aparece, para que el panel vea a todos los presentes.
+    for a in asistentes:
+        cedula = str(int(a["cedula"])) if str(a["cedula"]).isdigit() else str(a["cedula"])
+        if cedula in cedulas_con_diagnostico or cedula in inscripcion_por_cedula:
+            continue
+        filas_json.append({
+            "nombre": a["nombre"] or a["nombre_asistencia"] or "— (sin ficha en personal)",
+            "cedula": cedula,
+            "area": None,
+            "perfil": None,
+            "estado": None,
+            "porcentaje": None,
+            "nivel": None,
+            "componentes": [],
+            "creado_en": a["creado_en"].isoformat(),
+            "cargo": a["cargo"],
+            "servicio": a["servicio"],
+            "perfil_profesional": a["perfil_profesional"],
+            "entidad": a["entidad"],
+            "telefono": a["telefono"],
+            "email_institucional": a["email_institucional"],
+            "email_secundario": a["email_secundario"],
+            "origen_personal": a["origen_personal"],
+            "puntaje_pretest": None,
+            "puntaje_posttest": post_puntajes.get(cedula),
+            "asistencia_en": a["creado_en"].isoformat(),
+            "dia": None,
+            "horario": None,
+            "salon": None,
         })
 
     return JSONResponse(

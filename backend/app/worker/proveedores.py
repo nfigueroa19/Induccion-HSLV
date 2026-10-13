@@ -176,25 +176,31 @@ def catalogo() -> list[Proveedor]:
             prioridad=3,
         ))
 
-    if cfg.sambanova_api_key:
-        rutas.append(Proveedor(
-            id="sambanova:llama-3.3-70b",
-            base_url=SAMBANOVA_URL,
-            api_key=cfg.sambanova_api_key,
-            modelo="Meta-Llama-3.3-70B-Instruct",
-            rpm=100,               # real: 600 rpm en el tier gratuito; conservador
-            prioridad=3,
-        ))
-
-    if cfg.mistral_api_key:
-        rutas.append(Proveedor(
-            id="mistral:small",
-            base_url=MISTRAL_URL,
-            api_key=cfg.mistral_api_key,
-            modelo="mistral-small-latest",
-            rpm=50,                # real: ~1 req/s; conservador
-            prioridad=3,
-        ))
+    # SambaNova y Mistral — DESHABILITADAS 2026-10-12. Ambas llaves son válidas
+    # y el modelo existe en su catálogo, pero una sola petición suelta devuelve
+    # 429 "Rate limit exceeded" (cuenta gratuita sin cupo; coincide con los 0
+    # éxitos de la prueba de carga del 2026-09-08). Con OpenAI de principal y
+    # NIM/Groq/Gemini sanos de respaldo no hacen falta; solo gastaban intentos
+    # fallidos. Para reactivarlas: confirmar antes que respondan con 200.
+    # if cfg.sambanova_api_key:
+    #     rutas.append(Proveedor(
+    #         id="sambanova:llama-3.3-70b",
+    #         base_url=SAMBANOVA_URL,
+    #         api_key=cfg.sambanova_api_key,
+    #         modelo="Meta-Llama-3.3-70B-Instruct",
+    #         rpm=100,               # real: 600 rpm en el tier gratuito; conservador
+    #         prioridad=3,
+    #     ))
+    #
+    # if cfg.mistral_api_key:
+    #     rutas.append(Proveedor(
+    #         id="mistral:small",
+    #         base_url=MISTRAL_URL,
+    #         api_key=cfg.mistral_api_key,
+    #         modelo="mistral-small-latest",
+    #         rpm=50,                # real: ~1 req/s; conservador
+    #         prioridad=3,
+    #     ))
 
     if cfg.gemini_api_key:
         rutas.append(Proveedor(

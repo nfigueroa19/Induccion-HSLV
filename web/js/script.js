@@ -337,7 +337,8 @@ function mostrarPane(pane) {
   paneResultado.hidden = pane !== paneResultado;
   paneError.hidden = pane !== paneError;
   pane.hidden = false;
-  btnCerrarModal.hidden = false;
+  // En el resultado, "Realizar Post-Test" sustituye a "Cerrar".
+  btnCerrarModal.hidden = pane === paneResultado;
   esperandoDiagnostico = false;
 }
 

@@ -11,7 +11,7 @@ async def iniciar() -> asyncpg.Pool:
         _pool = await asyncpg.create_pool(
             cfg.database_url,
             min_size=1,
-            max_size=8,
+            max_size=15,
             command_timeout=30,
             # Obligatorio con el pooler de Supabase en modo transacción:
             # pgbouncer no soporta prepared statements con nombre.

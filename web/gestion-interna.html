@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Panel de jefes de servicio — ADN Susana</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
-<link rel="stylesheet" href="css/panel.css?v=20261005c" />
+<link rel="stylesheet" href="css/panel.css?v=20261012b" />
 </head>
 <body>
 <div class="panel">
@@ -24,8 +24,12 @@
     <section class="tarjeta">
       <div class="resumen-general" id="resumen-general">
         <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-total">—</span>
-          <span class="resumen-etiqueta">personas registradas</span>
+          <span class="resumen-valor" id="resumen-con-salon">—</span>
+          <span class="resumen-etiqueta">inscritos</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-valor" id="resumen-asistencia">—</span>
+          <span class="resumen-etiqueta">han marcado asistencia</span>
         </div>
         <div class="resumen-item">
           <span class="resumen-valor" id="resumen-listos">—</span>
@@ -36,21 +40,13 @@
           <span class="resumen-etiqueta">promedio general</span>
         </div>
         <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-con-salon">—</span>
-          <span class="resumen-etiqueta">ya eligieron salón y horario</span>
-        </div>
-        <div class="resumen-item">
-          <span class="resumen-valor" id="resumen-sin-salon">—</span>
-          <span class="resumen-etiqueta">sin salón todavía</span>
-        </div>
-        <div class="resumen-item">
           <span class="resumen-valor" id="resumen-autorregistro">—</span>
           <span class="resumen-etiqueta">autorregistro</span>
         </div>
       </div>
 
       <div class="filtros">
-        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre, cédula, cargo, proceso o perfil…" autocomplete="off" />
+        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre, cédula, cargo o proceso…" autocomplete="off" />
         <select id="filtro-proceso"><option value="">Todos los procesos</option></select>
         <select id="filtro-entidad"><option value="">Todas las entidades</option></select>
         <select id="filtro-inscripcion">
@@ -103,10 +99,11 @@
               <th>Cédula</th>
               <th>Cargo</th>
               <th>Proceso</th>
-              <th>Perfil</th>
-              <th>Puntaje Pre-Test</th>
-              <th>Entidad</th>
               <th>Inscripción</th>
+              <th>Asistencia</th>
+              <th>Puntaje Pre-Test</th>
+              <th>Puntaje Post-Test</th>
+              <th>Entidad</th>
               <th>Estado</th>
               <th>% global</th>
               <th>Origen</th>
@@ -131,6 +128,6 @@
 
 </div>
 
-<script src="js/gestion-interna.js?v=20261005c"></script>
+<script src="js/gestion-interna.js?v=20261012b"></script>
 </body>
 </html>

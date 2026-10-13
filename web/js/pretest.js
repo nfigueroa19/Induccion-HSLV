@@ -53,16 +53,22 @@ const HORARIOS_TEXTO = {
   '13:30': { articulo: 'la', hora: '1:30 p.m.' },
 };
 
+const SALONES_TEXTO = {
+  memoria: 'Memoria',
+  huella: 'Huella',
+};
+
 // `previamenteRegistrada`: distingue el envío recién hecho (form-salon) de
 // quien reingresa la cédula y ya tenía día/horario/salón de antes — mismo
 // mensaje con la fecha/hora elegida, solo cambia el verbo introductorio.
-function textoConfirmacion(dia, horario, previamenteRegistrada) {
+function textoConfirmacion(dia, horario, salon, previamenteRegistrada) {
   const diaTexto = DIAS_TEXTO[dia] || dia;
   const horarioInfo = HORARIOS_TEXTO[horario] || { articulo: 'las', hora: horario };
+  const salonTexto = SALONES_TEXTO[salon] || salon;
   const intro = previamenteRegistrada
     ? '¡Gracias! Tu confirmación ya estaba registrada.'
     : '¡Gracias! Tu confirmación quedó registrada.';
-  return `${intro} Te esperamos el ${diaTexto} a ${horarioInfo.articulo} ${horarioInfo.hora}`;
+  return `${intro} Te esperamos el ${diaTexto} a ${horarioInfo.articulo} ${horarioInfo.hora} en el salón ${salonTexto}.`;
 }
 
 // Deja el paso 3 en su estado final: oculta el formulario y muestra la
@@ -83,8 +89,8 @@ function revelarConfirmacionSalon(mensaje) {
 // Quien reingresa la cédula y ya tenía día/horario/salón guardados de una
 // sesión anterior: misma UI final que deja el submit de `form-salon`, pero
 // sin volver a mandar nada al backend.
-function mostrarConfirmacionSalon(dia, horario) {
-  revelarConfirmacionSalon(textoConfirmacion(dia, horario, true));
+function mostrarConfirmacionSalon(dia, horario, salon) {
+  revelarConfirmacionSalon(textoConfirmacion(dia, horario, salon, true));
 }
 
 fetch(`${API}/healthz`).catch(() => {});
@@ -249,7 +255,7 @@ formCedula.addEventListener('submit', async (e) => {
       respondioActual = data.respondio || false;
       puntuacionActual = typeof data.puntuacion === 'number' ? data.puntuacion : null;
       if (respondioActual && data.dia && data.horario && data.salon) {
-        mostrarConfirmacionSalon(data.dia, data.horario);
+        mostrarConfirmacionSalon(data.dia, data.horario, data.salon);
       } else {
         mostrarSiguientePaso(respondioActual, puntuacionActual);
       }
@@ -340,7 +346,7 @@ formSalon.addEventListener('submit', async (e) => {
       statusSalon.textContent = 'No pudimos guardar tu confirmación. Intenta de nuevo en un momento.';
       return;
     }
-    revelarConfirmacionSalon(textoConfirmacion(payload.dia, payload.horario, false));
+    revelarConfirmacionSalon(textoConfirmacion(payload.dia, payload.horario, payload.salon, false));
   } catch {
     statusSalon.textContent = 'Sin conexión con el servidor. Revisa tu red e intenta de nuevo.';
   }

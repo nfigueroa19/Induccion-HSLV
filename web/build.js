@@ -27,7 +27,7 @@ if (!DESTINOS_VALIDOS.has(nombreSalida)) {
   process.exit(1);
 }
 const SALIDA = path.join(RAIZ, nombreSalida);
-const EXCLUIR = new Set([...DESTINOS_VALIDOS, "node_modules", "package.json", "package-lock.json", "build.js"]);
+const EXCLUIR = new Set([...DESTINOS_VALIDOS, "node_modules", "package.json", "package-lock.json", "build.js", "optimizar_imagenes.js"]);
 // Solo entran extensiones de assets reales del sitio — cualquier otra cosa
 // (.wrangler/ con el account id de Cloudflare, servir_local.py, etc.) se
 // queda fuera aunque no esté en EXCLUIR explícitamente.

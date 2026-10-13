@@ -117,7 +117,12 @@ async def _enviar_correo_diagnostico(pool, respuesta_id, porcentaje, nivel, crud
                 for c in cruda.get("componentes", [])
             ],
         }
-        await enviar_diagnostico_email(destinatario, diagnostico)
+        if await enviar_diagnostico_email(destinatario, diagnostico):
+            # Resend aceptó el envío: queda constancia en `diagnosticos`.
+            await pool.execute(
+                "update diagnosticos set enviado_en = now() where respuesta_id = $1",
+                respuesta_id,
+            )
     except Exception:
         log.exception("fallo enviando correo de diagnóstico para respuesta %s", respuesta_id)
 
