@@ -208,7 +208,7 @@ vallas de código, sin explicaciones:
     {"id": "C4", "nombre": "Compromiso con el entorno", "nivel": 0, "evidencia": "", "sugerencia": "(igual patrón que C1 si nivel 0)"},
     {"id": "C5", "nombre": "Sostenibles financieramente", "nivel": 0, "evidencia": "", "sugerencia": "(igual patrón que C1 si nivel 0)"},
     {"id": "C6", "nombre": "Gestión del conocimiento", "nivel": 0, "evidencia": "", "sugerencia": "(igual patrón que C1 si nivel 0)"},
-    {"id": "C7", "nombre": "Planeación estratégica y calidad", "nivel": 0, "evidencia": "", "sugerencia": "(igual patrón que C1 si nivel 0)"}
+    {"id": "C7", "nombre": "Mejoramiento Continuo", "nivel": 0, "evidencia": "", "sugerencia": "(igual patrón que C1 si nivel 0)"}
   ],
   "fortaleza": {
     "componente_id": "C2",

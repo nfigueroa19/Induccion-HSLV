@@ -167,7 +167,7 @@ En la práctica: conocer, aplicar, mantener vigentes y transferir políticas,
 manuales, procesos y procedimientos institucionales; documentar y compartir lo
 que funciona en vez de guardarlo solo para uno mismo.
 
-## C7 — Planeación estratégica y calidad
+## C7 — Mejoramiento Continuo
 
 La calidad como forma de actuar cotidiana, no como requisito administrativo:
 principios del Sistema Único de Acreditación (SUA), mejoramiento continuo,
