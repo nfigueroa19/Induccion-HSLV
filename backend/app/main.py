@@ -1103,12 +1103,17 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
     inscripcion_por_cedula = {str(i["cedula"]): i for i in inscritos}
 
     # Puntaje del post-test (cierre.html), también por cédula en claro.
-    post_puntajes = {
-        str(r["cedula"]): r["puntuacion"]
-        for r in await p.fetch(
-            "select cedula, puntuacion from post_test where campana = $1",
-            cfg.campana,
-        )
+    # Los envíos anteriores a la ampliación (`pregunta_22` nula) quedaron
+    # sobre 21; los nuevos, sobre 26.
+    post_filas = await p.fetch(
+        "select cedula, puntuacion, (pregunta_22 is not null) as post_26 "
+        "from post_test where campana = $1",
+        cfg.campana,
+    )
+    post_puntajes = {str(r["cedula"]): r["puntuacion"] for r in post_filas}
+    post_totales = {
+        str(r["cedula"]): len(CLAVE_POST_TEST) if r["post_26"] else len(CLAVE_PRE_TEST)
+        for r in post_filas
     }
 
     # Hora del registro de asistencia (asistencia.html desde la Pi). La cédula
@@ -1172,6 +1177,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "origen_personal": f["origen_personal"],
             "puntaje_pretest": insc["puntuacion"] if insc else None,
             "puntaje_posttest": post_puntajes.get(clave_cedula),
+            "total_posttest": post_totales.get(clave_cedula),
             "asistencia_en": asistencia_por_cedula.get(clave_cedula),
             "dia": insc["dia"] if insc else None,
             "horario": insc["horario"] if insc else None,
@@ -1204,6 +1210,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "origen_personal": i["origen_personal"],
             "puntaje_pretest": i["puntuacion"],
             "puntaje_posttest": post_puntajes.get(cedula),
+            "total_posttest": post_totales.get(cedula),
             "asistencia_en": asistencia_por_cedula.get(cedula),
             "dia": i["dia"],
             "horario": i["horario"],
@@ -1236,6 +1243,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "origen_personal": a["origen_personal"],
             "puntaje_pretest": None,
             "puntaje_posttest": post_puntajes.get(cedula),
+            "total_posttest": post_totales.get(cedula),
             "asistencia_en": a["creado_en"].isoformat(),
             "dia": None,
             "horario": None,

@@ -234,7 +234,7 @@ function dibujar() {
       <td>${d.salon ? escapar(textoInscripcion(d)) : '<span class="etiqueta-estado etiqueta-sin-salon">Sin salón</span>'}</td>
       <td>${escapar(textoAsistencia(d.asistencia_en))}</td>
       <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
-      <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${totalPreguntasPretest}` : '—'}</td>
+      <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${d.total_posttest || totalPreguntasPretest}` : '—'}</td>
       <td>${escapar(d.entidad || '—')}</td>
       <td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
