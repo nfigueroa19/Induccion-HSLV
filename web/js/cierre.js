@@ -1,6 +1,7 @@
 // Cierre de reinducción 2026 (post-test) — lookup contra `personal` + `post_test`
 // (ver /v1/post-test [GET y POST] en app/main.py). Mismo flujo de identificación
-// que pretest.js; las 21 preguntas son las del pre-test en otro orden.
+// que pretest.js; las preguntas 1-21 son las del pre-test en otro orden y la
+// 22-26 son propias del cierre.
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8000'
   : 'https://induccion-hslv-api.onrender.com';
@@ -33,7 +34,7 @@ const progresoQuiz = document.getElementById('progreso-quiz');
 
 const puntajePost = document.getElementById('puntaje-post');
 
-const TOTAL_PREGUNTAS = 21;
+const TOTAL_PREGUNTAS = 26;
 
 fetch(`${API}/healthz`).catch(() => {});
 
@@ -134,11 +135,11 @@ formPreguntas.addEventListener('change', (e) => {
 });
 
 // Resultado final.
-function mostrarResultado(puntuacion) {
+function mostrarResultado(puntuacion, total = TOTAL_PREGUNTAS) {
   pasoCedula.hidden = true;
   pasoPreguntas.hidden = true;
   pasoResultado.hidden = false;
-  puntajePost.textContent = `Respondiste ${puntuacion} de ${TOTAL_PREGUNTAS} preguntas correctamente.`;
+  puntajePost.textContent = `Respondiste ${puntuacion} de ${total} preguntas correctamente.`;
   window.scrollTo(0, 0);
 }
 
@@ -176,7 +177,7 @@ formCedula.addEventListener('submit', async (e) => {
 
     if (data.existe && data.completo) {
       // Quien ya hizo el cierre ve su resultado, sin repetir las 21 preguntas.
-      if (data.respondio) mostrarResultado(data.puntuacion);
+      if (data.respondio) mostrarResultado(data.puntuacion, data.total);
       else mostrarCuestionario();
       return;
     }
@@ -253,7 +254,7 @@ formPreguntas.addEventListener('submit', async (e) => {
     }
     const data = await r.json();
     statusPreguntas.textContent = '';
-    mostrarResultado(data.puntuacion);
+    mostrarResultado(data.puntuacion, data.total);
   } catch {
     statusPreguntas.textContent = 'Sin conexión con el servidor. Revisa tu red e intenta de nuevo.';
     btnEnviar.disabled = false;

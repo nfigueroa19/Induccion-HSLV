@@ -122,6 +122,18 @@ CLAVE_PRE_TEST: dict[str, str] = {
 }
 
 
+# Post-test (cierre.html): las 21 del pre-test + 5 nuevas (22..26). Los textos
+# deben coincidir con los `value` de los radios de web/cierre.html.
+CLAVE_POST_TEST: dict[str, str] = {
+    **CLAVE_PRE_TEST,
+    "pregunta_22": "a) Informar, explicar y justificar la gestión y el uso de los recursos públicos a la ciudadanía para garantizar la transparencia y la confianza en el Estado",
+    "pregunta_23": "d) A y B son correctas",
+    "pregunta_24": "a) Primera Línea de Defensa",
+    "pregunta_25": "d) Son siete: Gestión, Fiscales, Corrupción, SARLAFT, Seguridad de la Información, Ambientales y Fuga de Capital Intelectual",
+    "pregunta_26": "d) Todos son correctos",
+}
+
+
 @asynccontextmanager
 async def ciclo_vida(app: FastAPI):
     await db.iniciar()
@@ -526,7 +538,7 @@ async def buscar_post_test(request: Request, cedula: str):
         """
         select nombre_completo, cargo, proceso, entidad,
                (email_institucional is not null or email_secundario is not null) as tiene_correo,
-               po.puntuacion as puntuacion
+               po.puntuacion as puntuacion, (po.pregunta_22 is not null) as post_26
           from personal
           left join post_test po on po.cedula = personal.cedula and po.campana = $2
          where personal.cedula = $1
@@ -540,6 +552,8 @@ async def buscar_post_test(request: Request, cedula: str):
         "completo": fila["entidad"] is not None and fila["tiene_correo"],
         "respondio": fila["puntuacion"] is not None,
         "puntuacion": fila["puntuacion"],
+        # Los envíos anteriores a la ampliación quedaron sobre 21 preguntas.
+        "total": len(CLAVE_POST_TEST) if fila["post_26"] else len(CLAVE_PRE_TEST),
         "nombre": fila["nombre_completo"],
         "cargo": fila["cargo"],
         "proceso": fila["proceso"],
@@ -549,7 +563,7 @@ async def buscar_post_test(request: Request, cedula: str):
 
 class PostTestIn(BaseModel):
     """Envío del cuestionario de cierre (cierre.html). Mismas claves
-    `pregunta_01..21` que el pre-test, calificadas con CLAVE_PRE_TEST."""
+    `pregunta_01..26`, calificadas con CLAVE_POST_TEST."""
     cedula: str = Field(min_length=5, max_length=15)
     respuestas: dict[str, str | None]
 
@@ -565,17 +579,17 @@ class PostTestIn(BaseModel):
 @app.post("/v1/post-test", status_code=201)
 @limiter.limit("60/minute")
 async def guardar_post_test(request: Request, payload: PostTestIn):
-    faltantes = CLAVE_PRE_TEST.keys() - payload.respuestas.keys()
+    faltantes = CLAVE_POST_TEST.keys() - payload.respuestas.keys()
     if faltantes:
         raise HTTPException(
             status_code=422,
             detail=f"Faltan respuestas: {', '.join(sorted(faltantes))}",
         )
     puntuacion = sum(
-        1 for pregunta, correcta in CLAVE_PRE_TEST.items()
+        1 for pregunta, correcta in CLAVE_POST_TEST.items()
         if payload.respuestas.get(pregunta) == correcta
     )
-    columnas = sorted(CLAVE_PRE_TEST.keys())
+    columnas = sorted(CLAVE_POST_TEST.keys())
     valores = [payload.respuestas[c] for c in columnas]
     placeholders = ", ".join(f"${i}" for i in range(4, 4 + len(columnas)))
 
@@ -596,7 +610,7 @@ async def guardar_post_test(request: Request, payload: PostTestIn):
             "select puntuacion from post_test where campana = $1 and cedula = $2",
             cfg.campana, int(payload.cedula),
         )
-    return {"ok": True, "puntuacion": fila["puntuacion"]}
+    return {"ok": True, "puntuacion": fila["puntuacion"], "total": len(CLAVE_POST_TEST)}
 
 
 class AsistenciaIn(BaseModel):
