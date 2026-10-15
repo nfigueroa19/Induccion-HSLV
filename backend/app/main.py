@@ -158,6 +158,38 @@ app = FastAPI(
     openapi_url=None,
 )
 
+MENSAJE_CIERRE = (
+    "¡Gracias por ser parte de la Reinducción 2026! El evento terminó y esta "
+    "plataforma ya está cerrada. Para cualquier consulta: unidadia@hosusana.gov.co."
+)
+# Lo único que sigue abierto con PORTAL_CERRADO=true. Lista de permitidos (no de
+# bloqueados): una ruta nueva queda cerrada por defecto.
+RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado")
+
+
+class CierrePortal:
+    """Middleware ASGI puro (no BaseHTTPMiddleware: el stream SSE del dashboard
+    no debe pasar por un wrapper que lo bufferee). Va ANTES de CORS en el código
+    para quedar por dentro de él y que el 410 lleve cabeceras CORS. No toca el
+    worker embebido: ese corre como tarea asyncio, no por HTTP."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (
+            cfg.portal_cerrado
+            and scope["type"] == "http"
+            and scope["method"] != "OPTIONS"
+            and not scope["path"].startswith(RUTAS_ABIERTAS_CERRADO)
+        ):
+            await JSONResponse({"detail": MENSAJE_CIERRE}, status_code=410)(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(CierrePortal)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cfg.lista_origenes,

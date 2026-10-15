@@ -4,7 +4,8 @@
   "description": "Genera copias de web/ minificadas y sin comentarios: dist_pi (Raspberry Pi) y dist_cf (Cloudflare Pages), en vez de subir el código fuente crudo.",
   "scripts": {
     "build:pi": "node build.js dist_pi",
-    "build:cf": "node build.js dist_cf"
+    "build:cf": "node build.js dist_cf",
+    "build:cf:cerrado": "node build.js dist_cf --cerrado"
   },
   "devDependencies": {
     "clean-css": "^5.3.3",

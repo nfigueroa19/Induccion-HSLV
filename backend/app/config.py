@@ -17,6 +17,9 @@ class Config(BaseSettings):
     # --- HTTP --------------------------------------------------------------
     origenes: str = "http://localhost:8899"
     admin_token: str = ""     # protege /v1/estado; vacío = endpoint deshabilitado
+    # Cierre del portal (fin de la Reinducción): con true, la API responde 410 a todo
+    # salvo login/panel, dashboard, /v1/estado y /healthz. Reabrir = false + reiniciar.
+    portal_cerrado: bool = False
 
     # --- Panel de administración (jefes de servicio) ------------------------
     jwt_secret: str = ""      # firma los tokens de sesión del login; vacío = endpoints deshabilitados

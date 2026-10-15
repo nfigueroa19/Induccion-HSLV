@@ -27,6 +27,35 @@ if (!DESTINOS_VALIDOS.has(nombreSalida)) {
   process.exit(1);
 }
 const SALIDA = path.join(RAIZ, nombreSalida);
+
+// Modo cerrado (`--cerrado`, fin de la Reinducción): solo se publican login,
+// gestion-interna y dashboard. El resto de páginas se reemplaza por un aviso y
+// sus JS no se publican. El código fuente no se toca: para reabrir, compilar sin
+// `--cerrado`. Backup del portal abierto: tag git `portal-abierto-2026-10-15`.
+const CERRADO = process.argv.includes("--cerrado");
+const PAGINAS_ABIERTAS = new Set(["login.html", "gestion-interna.html", "dashboard.html"]);
+const JS_ABIERTOS = new Set(["login.js", "gestion-interna.js", "dashboard.js", "splash.js"]);
+const PAGINAS_CERRADAS = ["index.html", "inscripcion.html", "asistencia.html", "cierre.html"];
+const HTML_CIERRE = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reinducción 2026 — Plataforma cerrada</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6f8f3;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#29235C}
+main{max-width:520px;margin:16px;padding:40px 32px;background:#fff;border-top:6px solid #76B82A;border-radius:12px;box-shadow:0 4px 24px rgba(41,35,92,.08);text-align:center}
+img{max-width:220px;height:auto;margin-bottom:24px}
+h1{font-size:1.5rem;margin:0 0 16px;color:#327531}
+p{line-height:1.6;margin:0 0 12px}
+a{color:#327531;font-weight:600}
+</style></head><body><main>
+<img src="Assets/Logo/hslv-horizontal.png" alt="Hospital Universitario Susana López de Valencia">
+<h1>¡Gracias por ser parte de la Reinducción 2026!</h1>
+<p>El evento terminó y esta plataforma ya está cerrada.</p>
+<p>Lo vivido en estos días sigue con nosotros en el día a día del Hospital.</p>
+<p>Para cualquier consulta: <a href="mailto:unidadia@hosusana.gov.co">unidadia@hosusana.gov.co</a></p>
+</main></body></html>`;
+
 const EXCLUIR = new Set([...DESTINOS_VALIDOS, "node_modules", "package.json", "package-lock.json", "build.js", "optimizar_imagenes.js"]);
 // Solo entran extensiones de assets reales del sitio — cualquier otra cosa
 // (.wrangler/ con el account id de Cloudflare, servir_local.py, etc.) se
@@ -87,6 +116,9 @@ async function minificarHtml(codigo) {
 
 async function procesarArchivo(origen, destino) {
   const ext = path.extname(origen).toLowerCase();
+  if (CERRADO && path.dirname(path.relative(RAIZ, origen)) === "." && ext === ".html"
+      && !PAGINAS_ABIERTAS.has(path.basename(origen))) return false; // se genera el aviso aparte
+  if (CERRADO && path.dirname(path.relative(RAIZ, origen)) === "js" && !JS_ABIERTOS.has(path.basename(origen))) return false;
   fs.mkdirSync(path.dirname(destino), { recursive: true });
 
   if (ext === ".js") {
@@ -131,5 +163,9 @@ async function recorrer(dirRelativo) {
 (async () => {
   fs.rmSync(SALIDA, { recursive: true, force: true });
   await recorrer("");
+  if (CERRADO) {
+    for (const pagina of PAGINAS_CERRADAS) fs.writeFileSync(path.join(SALIDA, pagina), HTML_CIERRE);
+    console.log("modo CERRADO: páginas públicas reemplazadas por el aviso");
+  }
   console.log(`\nListo -> ${path.relative(RAIZ, SALIDA)}/`);
 })();
