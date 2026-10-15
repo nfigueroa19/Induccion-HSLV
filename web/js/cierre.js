@@ -6,6 +6,20 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
   ? 'http://localhost:8000'
   : 'https://induccion-hslv-api.onrender.com';
 
+// Reintenta ante errores temporales (429 por IP compartida, 502/503/504 cuando
+// Render despierta, o red caída un instante). Los 4xx de validación no se reintentan.
+async function fetchConReintento(url, opciones, intentos = 5) {
+  for (let i = 0; i < intentos; i++) {
+    try {
+      const r = await fetch(url, opciones);
+      if (r.ok || ![429, 500, 502, 503, 504].includes(r.status) || i === intentos - 1) return r;
+    } catch (err) {
+      if (i === intentos - 1) throw err;
+    }
+    await new Promise((res) => setTimeout(res, 2000 * (i + 1) + Math.random() * 800));
+  }
+}
+
 const pasoCedula = document.getElementById('paso-cedula');
 const pasoPreguntas = document.getElementById('paso-preguntas');
 const pasoResultado = document.getElementById('paso-resultado');
@@ -166,7 +180,7 @@ formCedula.addEventListener('submit', async (e) => {
   statusCedula.textContent = 'Verificando...';
 
   try {
-    const r = await fetch(`${API}/v1/post-test/${encodeURIComponent(valor)}`);
+    const r = await fetchConReintento(`${API}/v1/post-test/${encodeURIComponent(valor)}`);
     if (!r.ok) {
       statusCedula.textContent = 'No pudimos verificar tu cédula. Intenta de nuevo en un momento.';
       return;
@@ -204,7 +218,7 @@ formContacto.addEventListener('submit', async (e) => {
   const entidad = selectEntidad.value === OTRA ? inputEntidadOtra.value.trim() : selectEntidad.value;
 
   try {
-    const r = await fetch(`${API}/v1/personal`, {
+    const r = await fetchConReintento(`${API}/v1/personal`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -242,7 +256,7 @@ formPreguntas.addEventListener('submit', async (e) => {
   }
 
   try {
-    const r = await fetch(`${API}/v1/post-test`, {
+    const r = await fetchConReintento(`${API}/v1/post-test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cedula: cedulaActual, respuestas }),

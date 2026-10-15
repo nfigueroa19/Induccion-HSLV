@@ -180,7 +180,10 @@ app.add_middleware(
 # pública, así que aquí no hay que absorber una ráfaga sincronizada de
 # ~1500 personas — solo frenar un script, no a varias personas reales
 # detrás del mismo NAT/WiFi institucional llenando el formulario a la vez.
-limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+# 2026-10-14: el post-test (cierre.html) SÍ se llena en vivo desde el WiFi del
+# hospital (una sola IP pública para todos); con 60/min y 120/min por defecto
+# se devolvían 429 ("No pudimos guardar tus respuestas"). Subidos a 600/min.
+limiter = Limiter(key_func=get_remote_address, default_limits=["600/minute"])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -296,7 +299,7 @@ async def catalogos():
 
 
 @app.get("/v1/personal/{cedula}")
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def buscar_personal(request: Request, cedula: str):
     """Lookup de solo lectura contra el roster `personal` (RR.HH.) por cédula.
 
@@ -337,7 +340,7 @@ async def buscar_personal(request: Request, cedula: str):
 
 
 @app.get("/v1/pre-test/{cedula}")
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def buscar_pre_test(request: Request, cedula: str):
     """Lookup para pre-test-induccion2026.html: mismo criterio de `completo`
     que /v1/personal, más `respondio` (ya existe una fila en `pre_test` para
@@ -434,7 +437,7 @@ class PersonalContactoIn(BaseModel):
 
 
 @app.post("/v1/personal", status_code=200)
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def guardar_personal(request: Request, payload: PersonalContactoIn):
     p = await db.pool()
     await upsertar_personal(
@@ -469,7 +472,7 @@ class PreTestIn(BaseModel):
 
 
 @app.post("/v1/pre-test", status_code=201)
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def guardar_pre_test(request: Request, payload: PreTestIn):
     p = await db.pool()
 
@@ -525,7 +528,7 @@ async def guardar_pre_test(request: Request, payload: PreTestIn):
 
 
 @app.get("/v1/post-test/{cedula}")
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def buscar_post_test(request: Request, cedula: str):
     """Lookup para cierre.html (post-test). Mismo criterio de `completo` que
     /v1/pre-test, más `respondio` (ya hay fila en `post_test`)."""
@@ -577,7 +580,7 @@ class PostTestIn(BaseModel):
 
 
 @app.post("/v1/post-test", status_code=201)
-@limiter.limit("60/minute")
+@limiter.limit("600/minute")
 async def guardar_post_test(request: Request, payload: PostTestIn):
     faltantes = CLAVE_POST_TEST.keys() - payload.respuestas.keys()
     if faltantes:
