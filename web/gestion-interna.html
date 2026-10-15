@@ -31,7 +31,7 @@
           <span class="resumen-valor" id="resumen-asistencia">—</span>
           <span class="resumen-etiqueta">han marcado asistencia</span>
         </div>
-        <div class="resumen-item">
+        <div class="resumen-item" data-solo-completo>
           <span class="resumen-valor" id="resumen-listos">—</span>
           <span class="resumen-etiqueta">diagnósticos listos</span>
         </div>
@@ -39,7 +39,7 @@
           <span class="resumen-valor" id="resumen-promedio">—</span>
           <span class="resumen-etiqueta">promedio general</span>
         </div>
-        <div class="resumen-item">
+        <div class="resumen-item" data-solo-completo>
           <span class="resumen-valor" id="resumen-autorregistro">—</span>
           <span class="resumen-etiqueta">autorregistro</span>
         </div>
@@ -56,12 +56,12 @@
         </select>
         <select id="filtro-dia"><option value="">Todos los días</option></select>
         <select id="filtro-salon"><option value="">Todos los salones</option></select>
-        <select id="filtro-origen">
+        <select id="filtro-origen" data-solo-completo>
           <option value="">Todos los orígenes</option>
           <option value="rrhh">Roster RR.HH.</option>
           <option value="autorregistro">Autorregistro</option>
         </select>
-        <select id="filtro-estado">
+        <select id="filtro-estado" data-solo-completo>
           <option value="">Todos los estados</option>
           <option value="listo">Listo</option>
           <option value="pendiente">Pendiente</option>
@@ -104,9 +104,9 @@
               <th>Puntaje Pre-Test</th>
               <th>Puntaje Post-Test</th>
               <th>Entidad</th>
-              <th>Estado</th>
+              <th data-solo-completo>Estado</th>
               <th>% global</th>
-              <th>Origen</th>
+              <th data-solo-completo>Origen</th>
               <th></th>
             </tr>
           </thead>

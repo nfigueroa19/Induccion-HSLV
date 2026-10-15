@@ -33,6 +33,7 @@ const HORARIOS_TEXTO = { '7:30': '7:30 a.m.', '13:30': '1:30 p.m.' };
 let datos = [];
 let totalPreguntasPretest = 0;
 let filaAbierta = null;
+let restringido = false; // talento humano: sin estado, origen, autorregistro ni diagnósticos listos
 
 // Sesión deslizante: cualquier interacción real reinicia el reloj de
 // inactividad. Revisa cada 30s en vez de un solo setTimeout porque el
@@ -73,6 +74,8 @@ async function cargar() {
     const json = await r.json();
     datos = json.respuestas;
     totalPreguntasPretest = json.total_preguntas_pretest || 0;
+    restringido = !!json.restringido;
+    if (restringido) document.querySelectorAll('[data-solo-completo]').forEach((el) => el.remove());
     poblarFiltroProceso();
     poblarFiltroEntidad();
     poblarFiltroInscripcion();
@@ -206,7 +209,7 @@ function dibujar() {
   const filas = filtrar();
 
   const listos = datos.filter((d) => d.porcentaje != null);
-  resumenListos.textContent = listos.length || '—';
+  if (resumenListos) resumenListos.textContent = listos.length || '—';
   resumenPromedio.textContent = listos.length
     ? `${Math.round(listos.reduce((acc, d) => acc + d.porcentaje, 0) / listos.length)}%`
     : '—';
@@ -236,9 +239,9 @@ function dibujar() {
       <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
       <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${d.total_posttest || totalPreguntasPretest}` : '—'}</td>
       <td>${escapar(d.entidad || '—')}</td>
-      <td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>
+      ${restringido ? '' : `<td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>`}
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
-      <td>${etiquetaOrigen(d.origen_personal)}</td>
+      ${restringido ? '' : `<td>${etiquetaOrigen(d.origen_personal)}</td>`}
       <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>
     `;
     if (d.componentes.length) {

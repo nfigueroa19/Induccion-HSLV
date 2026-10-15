@@ -231,22 +231,23 @@
       <p>Este resultado es solo tuyo. Nadie más lo ve. El sistema recopila únicamente promedios por áreas. Te lo enviamos también a tu correo — si no lo ves en un momento, revisa la carpeta de spam o correo no deseado.</p>
     </div>
 
-    <!-- Sustituye al botón "Cerrar" en el resultado. Abre el post-test en otra
-         pestaña para que el resultado siga aquí. -->
-    <a class="submit" id="btn-posttest" href="cierre.html" target="_blank" rel="noopener">Realizar Post-Test</a>
   </div>
 
   <div class="modal-error" id="pane-error" hidden>
     <h2>No pudimos generar tu diagnóstico</h2>
-    <p id="txt-error">Tu respuesta quedó guardada. Lo intentaremos de nuevo más tarde.</p>
+    <p id="txt-error">Tu respuesta quedó guardada. Te enviaremos tu resultado a tu correo — si no lo ves en un momento, revisa la carpeta de spam o correo no deseado.</p>
   </div>
 
+  <!-- Sustituye al botón "Cerrar" en el resultado y en cualquier error del
+       diagnóstico. Abre el post-test en otra pestaña. -->
+  <p class="aviso-atras" id="aviso-atras" role="alert" hidden>Recuerda realizar el Post-Test, el botón verde que está aquí abajo.</p>
+  <a class="submit" id="btn-posttest" href="cierre.html" target="_blank" rel="noopener" hidden>Realizar Post-Test</a>
   <button class="submit" id="cerrar-modal" type="button">Cerrar</button>
 </dialog>
 
 <!-- ?v= es cache-buster manual: python -m http.server no manda Cache-Control,
      así que el navegador puede quedarse con una copia vieja en dev local. -->
-<script src="js/script.js?v=20261013a"></script>
+<script src="js/script.js?v=20261013d"></script>
 <script src="js/splash.js"></script>
 </body>
 </html>

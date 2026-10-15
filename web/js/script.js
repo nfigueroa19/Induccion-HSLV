@@ -53,6 +53,8 @@ const paneResultado = document.getElementById('pane-resultado');
 const paneError = document.getElementById('pane-error');
 const estadoEspera = document.getElementById('estado-espera');
 const btnCerrarModal = document.getElementById('cerrar-modal');
+const btnPosttest = document.getElementById('btn-posttest');
+const avisoAtras = document.getElementById('aviso-atras');
 
 // Mientras esto es true, el diagnóstico sigue en vuelo: no se puede cerrar el
 // modal (ni con el botón, ni con Escape, ni con clic afuera) y se advierte
@@ -352,6 +354,7 @@ function abrirModal() {
   paneError.hidden = true;
   paneCargando.hidden = false;
   btnCerrarModal.hidden = true;
+  btnPosttest.hidden = true;
   estadoEspera.textContent = '';
   esperandoDiagnostico = true;
   modal.classList.remove('is-closing');
@@ -363,13 +366,35 @@ function abrirModal() {
   }
 }
 
+// En el resultado y en la demora no se deja salir con "atrás": se añade una
+// entrada al historial y, cuando el usuario retrocede, se vuelve a añadir y se
+// le recuerda el post-test. Cerrar la pestaña no se puede impedir.
+let trampaAtras = false;
+let temporizadorAviso = null;
+function activarTrampaAtras() {
+  if (trampaAtras) return;
+  trampaAtras = true;
+  try { history.pushState({ hslvTrampa: true }, ''); } catch {}
+}
+window.addEventListener('popstate', () => {
+  if (!trampaAtras) return;
+  try { history.pushState({ hslvTrampa: true }, ''); } catch {}
+  avisoAtras.hidden = false;
+  avisoAtras.scrollIntoView({ block: 'center', behavior: sinMovimiento ? 'auto' : 'smooth' });
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => { avisoAtras.hidden = true; }, 8000);
+});
+
 function mostrarPane(pane, demora = false) {
   paneCargando.hidden = true;
   paneResultado.hidden = pane !== paneResultado;
   paneError.hidden = pane !== paneError;
   pane.hidden = false;
-  // En el resultado, "Realizar Post-Test" sustituye a "Cerrar".
-  btnCerrarModal.hidden = pane === paneResultado;
+  // En el resultado y en cualquier error, "Realizar Post-Test" sustituye a "Cerrar".
+  const irAPosttest = pane === paneResultado || pane === paneError;
+  btnCerrarModal.hidden = irAPosttest;
+  btnPosttest.hidden = !irAPosttest;
+  if (irAPosttest) activarTrampaAtras();
   esperandoDiagnostico = false;
   // En un error por demora (la respuesta sigue en cola) se conserva el id para
   // que al recargar se vuelva a consultar.
@@ -411,14 +436,20 @@ async function esperarDiagnostico(id) {
     }
 
     if (r.status === 503) {
-      const e = await r.json().catch(() => ({}));
-      mostrarError(e.detail);
-      return;
+      // Solo es definitivo el 503 de nuestro backend (trae `detail`). Un 503
+      // sin ese cuerpo viene del hosting (reinicio, saturación): se reintenta.
+      const e = await r.json().catch(() => null);
+      if (e && e.detail) {
+        mostrarError(e.detail);
+        return;
+      }
+      continue;
     }
   }
 
   mostrarError('Tu diagnóstico está tardando más de lo normal. Tu respuesta ya ' +
-    'quedó guardada y lo recibirás apenas esté listo.', true);
+    'quedó guardada y te lo enviaremos a tu correo apenas esté listo — si no lo ves ' +
+    'en un momento, revisa la carpeta de spam o correo no deseado.', true);
 }
 
 function mostrarError(mensaje, demora = false) {

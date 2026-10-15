@@ -175,6 +175,27 @@ if (localStorage.getItem(CLAVE_LOCAL)) {
   mostrarRecordatorioWifi();
 }
 
+const SALONES_TEXTO = { memoria: 'Memoria', huella: 'Huella' };
+
+// El salón vive en pre_test (/v1/pre-test), no en /v1/personal. Si falla o la
+// persona no se inscribió devuelve null y el mensaje queda como antes: nunca
+// debe estorbar el registro de asistencia, que ya quedó guardado.
+async function obtenerSalon(cedula) {
+  try {
+    const r = await fetch(`${API}/v1/pre-test/${encodeURIComponent(cedula)}`);
+    if (!r.ok) return null;
+    return (await r.json()).salon || null;
+  } catch {
+    return null;
+  }
+}
+
+function textoBienvenida(salon) {
+  const base = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
+  if (!salon) return base;
+  return `${base} Tu salón es ${SALONES_TEXTO[salon] || salon}.`;
+}
+
 async function guardarAsistencia(datos) {
   const r = await fetch(`${API}/v1/asistencia`, {
     method: 'POST',
@@ -226,7 +247,7 @@ formCedula.addEventListener('submit', async (e) => {
         document.getElementById('grupo-autorizacion').hidden = true;
         btnCedula.hidden = true;
         hero.hidden = true;
-        status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
+        status.textContent = textoBienvenida(await obtenerSalon(valor));
         status.classList.add('status-grande');
         mostrarRecordatorioWifi();
       } catch (err) {
@@ -287,7 +308,7 @@ formContacto.addEventListener('submit', async (e) => {
       nombre, cargo, proceso, entidad, telefono, correo,
     });
     mostrarSoloMensajeFinal();
-    status.textContent = '¡Qué bueno tenerte aquí! Tu asistencia ha sido registrada con éxito.';
+    status.textContent = textoBienvenida(await obtenerSalon(inputCedula.value.trim()));
     status.classList.add('status-grande');
     mostrarRecordatorioWifi();
   } catch (err) {

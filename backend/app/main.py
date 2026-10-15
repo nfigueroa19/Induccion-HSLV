@@ -980,6 +980,9 @@ async def estado(x_admin_token: str = Header(default="")):
 # secreto de la URL. Ver Confidencialidad y privacidad.
 # ---------------------------------------------------------------------------
 
+USUARIOS_SIN_ESTADO_NI_ORIGEN = {"induccion"}  # talento humano
+
+
 class LoginIn(BaseModel):
     usuario: str = Field(min_length=1, max_length=60)
     contrasena: str = Field(min_length=1, max_length=200)
@@ -1109,8 +1112,16 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
     # Los envíos anteriores a la ampliación (`pregunta_22` nula) quedaron
     # sobre 21; los nuevos, sobre 26.
     post_filas = await p.fetch(
-        "select cedula, puntuacion, (pregunta_22 is not null) as post_26 "
-        "from post_test where campana = $1",
+        """
+        select po.cedula, po.puntuacion, (po.pregunta_22 is not null) as post_26,
+               po.creado_en, pe.nombre_completo as nombre, pe.cargo,
+               pe.proceso as servicio, pe.perfil as perfil_profesional,
+               pe.entidad, pe.telefono, pe.email_institucional,
+               pe.email_secundario, pe.origen as origen_personal
+          from post_test po
+          left join personal pe on pe.cedula = po.cedula
+         where po.campana = $1
+        """,
         cfg.campana,
     )
     post_puntajes = {str(r["cedula"]): r["puntuacion"] for r in post_filas}
@@ -1253,10 +1264,54 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "salon": None,
         })
 
+    # Quien solo hizo el post-test (sin diagnóstico, inscripción ni asistencia
+    # registrada) también aparece: antes quedaba fuera de las tres consultas
+    # de arriba y el panel no lo encontraba al buscar su cédula.
+    cedulas_ya_listadas = {f["cedula"] for f in filas_json}
+    for r in post_filas:
+        cedula = str(r["cedula"])
+        if cedula in cedulas_ya_listadas:
+            continue
+        filas_json.append({
+            "nombre": r["nombre"] or "— (sin ficha en personal)",
+            "cedula": cedula,
+            "area": None,
+            "perfil": None,
+            "estado": None,
+            "porcentaje": None,
+            "nivel": None,
+            "componentes": [],
+            "creado_en": r["creado_en"].isoformat(),
+            "cargo": r["cargo"],
+            "servicio": r["servicio"],
+            "perfil_profesional": r["perfil_profesional"],
+            "entidad": r["entidad"],
+            "telefono": r["telefono"],
+            "email_institucional": r["email_institucional"],
+            "email_secundario": r["email_secundario"],
+            "origen_personal": r["origen_personal"],
+            "puntaje_pretest": None,
+            "puntaje_posttest": r["puntuacion"],
+            "total_posttest": post_totales.get(cedula),
+            "asistencia_en": None,
+            "dia": None,
+            "horario": None,
+            "salon": None,
+        })
+
+    # Talento humano ("induccion") no ve estado ni origen: se quitan aquí, no
+    # solo en el front, para que no salgan en la respuesta de la API.
+    restringido = usuario in USUARIOS_SIN_ESTADO_NI_ORIGEN
+    if restringido:
+        for f in filas_json:
+            f["estado"] = None
+            f["origen_personal"] = None
+
     return JSONResponse(
         content={
             "campana": cfg.campana,
             "total_preguntas_pretest": len(CLAVE_PRE_TEST),
+            "restringido": restringido,
             "respuestas": filas_json,
         },
         headers={"X-Session-Token": _firmar_token(usuario)},
