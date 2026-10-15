@@ -1085,12 +1085,10 @@ async def admin_verificar(usuario: str = Depends(admin_actual)):
 
 @app.get("/v1/admin/respuestas")
 async def admin_respuestas(usuario: str = Depends(admin_actual)):
-    """Admin (jefes): lee la tabla `certificacion` (foto generada con
-    scripts/generar_certificacion.py). Talento humano ("induccion") sigue con la
-    vista en vivo, sin estado ni origen."""
-    if usuario in USUARIOS_SIN_ESTADO_NI_ORIGEN:
-        return await _respuestas_en_vivo(usuario)
-
+    """Lee la tabla `certificacion` (foto generada con
+    scripts/generar_certificacion.py). Talento humano ("induccion") ve la misma
+    tabla, pero sin el origen (autorregistro / RR.HH.)."""
+    restringido = usuario in USUARIOS_SIN_ESTADO_NI_ORIGEN
     p = await db.pool()
     filas = await p.fetch("select * from certificacion order by nombre")
     respuestas = []
@@ -1106,7 +1104,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "puntaje_posttest": f["puntaje_posttest"],
             "total_posttest": f["total_posttest"],
             "porcentaje": f["adn_susana"],
-            "origen_personal": f["origen"],
+            "origen_personal": None if restringido else f["origen"],
             "estado": None, "componentes": [],
         })
     return JSONResponse(
@@ -1114,7 +1112,7 @@ async def admin_respuestas(usuario: str = Depends(admin_actual)):
             "campana": cfg.campana,
             "total_preguntas_pretest": len(CLAVE_PRE_TEST),
             "vista": "certificacion",
-            "restringido": False,
+            "restringido": restringido,
             "respuestas": respuestas,
         },
         headers={"X-Session-Token": _firmar_token(usuario)},

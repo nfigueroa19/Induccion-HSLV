@@ -13,19 +13,10 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
 const SESION_INACTIVIDAD_MS = 15 * 60 * 1000;
 
 const cuerpoTabla = document.getElementById('cuerpo-tabla');
+const filtroBusqueda = document.getElementById('filtro-busqueda');
 const vacioTabla = document.getElementById('vacio-tabla');
 const cargandoTabla = document.getElementById('cargando-tabla');
-const resumenListos = document.getElementById('resumen-listos');
 const resumenPromedio = document.getElementById('resumen-promedio');
-const filtroBusqueda = document.getElementById('filtro-busqueda');
-const filtroProceso = document.getElementById('filtro-proceso');
-const filtroEntidad = document.getElementById('filtro-entidad');
-const filtroEstado = document.getElementById('filtro-estado');
-const filtroPct = document.getElementById('filtro-pct');
-const filtroInscripcion = document.getElementById('filtro-inscripcion');
-const filtroDia = document.getElementById('filtro-dia');
-const filtroSalon = document.getElementById('filtro-salon');
-const filtroOrigen = document.getElementById('filtro-origen');
 
 const DIAS_TEXTO = { '2026-10-13': 'Mar 13 oct', '2026-10-14': 'Mié 14 oct' };
 const HORARIOS_TEXTO = { '7:30': '7:30 a.m.', '13:30': '1:30 p.m.' };
@@ -33,7 +24,6 @@ const HORARIOS_TEXTO = { '7:30': '7:30 a.m.', '13:30': '1:30 p.m.' };
 let datos = [];
 let totalPreguntasPretest = 0;
 let filaAbierta = null;
-let sinEstado = false; // vista de certificación: sin columna ni filtro de estado
 let restringido = false; // talento humano: sin estado, origen, autorregistro ni diagnósticos listos
 
 // Sesión deslizante: cualquier interacción real reinicia el reloj de
@@ -76,16 +66,10 @@ async function cargar() {
     datos = json.respuestas;
     totalPreguntasPretest = json.total_preguntas_pretest || 0;
     restringido = !!json.restringido;
-    // Vista de certificación (admin): foto sin diagnóstico por componente ni estado.
-    if (json.vista === 'certificacion') {
-      document.querySelectorAll('[data-solo-estado]').forEach((el) => el.remove());
-      document.querySelector('.escala-detalle')?.remove();
-      sinEstado = true;
-    }
     if (restringido) document.querySelectorAll('[data-solo-completo]').forEach((el) => el.remove());
-    poblarFiltroProceso();
-    poblarFiltroEntidad();
-    poblarFiltroInscripcion();
+    // La vista de certificación no trae detalle por componente: sin leyenda 0-4.
+    if (json.vista === 'certificacion') document.querySelector('.escala-detalle')?.remove();
+    prepararFiltrosColumna();
     dibujar();
   } catch {
     cargandoTabla.textContent = 'No se pudo cargar la información. Intenta recargar la página.';
@@ -93,56 +77,6 @@ async function cargar() {
   }
 }
 cargar();
-
-// Proceso (personal.proceso, columna "servicio" en la respuesta) sí se presta
-// para un desplegable como área: son valores del roster de RR.HH., no texto
-// libre. Cargo y perfil profesional NO se filtran así — son demasiado
-// variados/inconsistentes entre filas para un select útil — y en cambio
-// entran a la búsqueda general de abajo.
-function poblarFiltroProceso() {
-  if (filtroProceso.dataset.poblado) return;
-  const procesos = [...new Set(datos.map((d) => d.servicio).filter(Boolean))].sort();
-  procesos.forEach((p) => {
-    const op = document.createElement('option');
-    op.value = p;
-    op.textContent = p;
-    filtroProceso.appendChild(op);
-  });
-  filtroProceso.dataset.poblado = '1';
-}
-
-// Entidad (personal.entidad: la empresa/cooperativa que contrata a la
-// persona, ej. SSC, ASIES, HSLV directo) — dato nuevo del roster de RR.HH.
-// de julio 2026, mismo criterio que proceso: valores cerrados del roster,
-// se prestan para un desplegable.
-function poblarFiltroEntidad() {
-  if (filtroEntidad.dataset.poblado) return;
-  const entidades = [...new Set(datos.map((d) => d.entidad).filter(Boolean))].sort();
-  entidades.forEach((ent) => {
-    const op = document.createElement('option');
-    op.value = ent;
-    op.textContent = ent;
-    filtroEntidad.appendChild(op);
-  });
-  filtroEntidad.dataset.poblado = '1';
-}
-
-// Día y salón: valores que de verdad existen en las inscripciones, así el
-// desplegable no ofrece combinaciones que nadie eligió.
-function poblarFiltroInscripcion() {
-  if (filtroDia.dataset.poblado) return;
-  const llenar = (select, valores, etiqueta) => {
-    [...new Set(valores.filter(Boolean))].sort().forEach((v) => {
-      const op = document.createElement('option');
-      op.value = v;
-      op.textContent = etiqueta(v);
-      select.appendChild(op);
-    });
-  };
-  llenar(filtroDia, datos.map((d) => d.dia), (v) => DIAS_TEXTO[v] || v);
-  llenar(filtroSalon, datos.map((d) => d.salon), capitalizar);
-  filtroDia.dataset.poblado = '1';
-}
 
 const capitalizar = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
@@ -163,52 +97,135 @@ function textoAsistencia(iso) {
   return Number.isNaN(f.getTime()) ? '—' : FORMATO_ASISTENCIA.format(f);
 }
 
-[filtroBusqueda, filtroProceso, filtroEntidad, filtroEstado, filtroPct,
-  filtroInscripcion, filtroDia, filtroSalon, filtroOrigen].forEach((el) =>
-  el.addEventListener('input', dibujar));
+// --- Filtros por columna, estilo Excel: solo Entidad e Inscripción. Cada
+// filtro es un conjunto de valores permitidos (null = todos). ---
+const SIN_SALON = 'Sin salón';
+const SIN_ENTIDAD = '(Vacías)';
+const COLUMNAS_FILTRO = {
+  entidad: (d) => d.entidad || SIN_ENTIDAD,
+  inscripcion: (d) => (d.salon ? textoInscripcion(d) : SIN_SALON),
+};
+const filtros = { entidad: null, inscripcion: null };
+let menuAbierto = null;
 
-function filtrar() {
-  const q = filtroBusqueda.value.trim().toLowerCase();
-  const pct = filtroPct.value;
+function prepararFiltrosColumna() {
+  document.querySelectorAll('th[data-col-filtro]').forEach((th) => {
+    const col = th.dataset.colFiltro;
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'th-filtro';
+    boton.setAttribute('aria-label', `Filtrar por ${th.textContent.trim()}`);
+    boton.textContent = '▾';
+    boton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirMenuFiltro(col, boton);
+    });
+    th.appendChild(boton);
+  });
+}
 
-  const filas = datos.filter((d) => {
-    if (filtroProceso.value && d.servicio !== filtroProceso.value) return false;
-    if (filtroEntidad.value && d.entidad !== filtroEntidad.value) return false;
-    if (filtroEstado.value && d.estado !== filtroEstado.value) return false;
-    if (filtroInscripcion.value === 'con' && !d.salon) return false;
-    if (filtroInscripcion.value === 'sin' && d.salon) return false;
-    if (filtroOrigen.value && d.origen_personal !== filtroOrigen.value) return false;
-    if (filtroDia.value && d.dia !== filtroDia.value) return false;
-    if (filtroSalon.value && d.salon !== filtroSalon.value) return false;
-    // Busca en todas las columnas de texto visibles, no solo nombre/cédula:
-    // con 6 columnas ya no alcanza con dos campos, y un jefe de servicio
-    // puede no saber en qué columna exacta está el dato que recuerda (p.ej.
-    // escribe "biomédica" sin saber si es el cargo, el proceso o el perfil).
-    // Se compara palabra por palabra (todas deben aparecer, en cualquier
-    // orden) para que "diego castro" encuentre "Diego Felipe Castro Jordán".
-    if (q) {
-      const bolsa = `${d.nombre} ${d.cedula} ${d.cargo || ''} ${d.servicio || ''} ${d.entidad || ''}`.toLowerCase();
-      const palabras = q.split(/\s+/).filter(Boolean);
-      if (!palabras.every((palabra) => bolsa.includes(palabra))) return false;
-    }
-    if (pct === 'alto' && !(d.porcentaje != null && d.porcentaje >= 80)) return false;
-    if (pct === 'medio' && !(d.porcentaje != null && d.porcentaje >= 50 && d.porcentaje < 80)) return false;
-    if (pct === 'bajo' && !(d.porcentaje != null && d.porcentaje < 50)) return false;
-    if (pct === 'sin' && d.porcentaje != null) return false;
-    return true;
+function valoresColumna(col) {
+  const valores = [...new Set(datos.map(COLUMNAS_FILTRO[col]))];
+  return valores.sort((a, b) => {
+    if (a === SIN_SALON || a === SIN_ENTIDAD) return 1;
+    if (b === SIN_SALON || b === SIN_ENTIDAD) return -1;
+    return a.localeCompare(b, 'es');
+  });
+}
+
+function cerrarMenuFiltro() {
+  if (menuAbierto) menuAbierto.remove();
+  menuAbierto = null;
+}
+document.addEventListener('click', (e) => {
+  if (menuAbierto && !menuAbierto.contains(e.target)) cerrarMenuFiltro();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarMenuFiltro(); });
+window.addEventListener('resize', cerrarMenuFiltro);
+
+function abrirMenuFiltro(col, boton) {
+  const yaEraEste = menuAbierto && menuAbierto.dataset.col === col;
+  cerrarMenuFiltro();
+  if (yaEraEste) return;
+
+  const todos = valoresColumna(col);
+  const marcados = new Set(filtros[col] || todos);
+
+  const menu = document.createElement('div');
+  menu.className = 'menu-filtro';
+  menu.dataset.col = col;
+  menu.innerHTML = `
+    <input type="search" class="menu-filtro-buscar" placeholder="Buscar…" autocomplete="off" />
+    <label class="menu-filtro-item menu-filtro-todos"><input type="checkbox" data-todos /> <span>(Seleccionar todo)</span></label>
+    <div class="menu-filtro-lista"></div>
+  `;
+  const lista = menu.querySelector('.menu-filtro-lista');
+  const chkTodos = menu.querySelector('[data-todos]');
+  const buscar = menu.querySelector('.menu-filtro-buscar');
+
+  const aplicar = () => {
+    chkTodos.checked = marcados.size === todos.length;
+    chkTodos.indeterminate = marcados.size > 0 && marcados.size < todos.length;
+    filtros[col] = marcados.size === todos.length ? null : new Set(marcados);
+    boton.classList.toggle('activo', filtros[col] !== null);
+    dibujar();
+  };
+
+  todos.forEach((v) => {
+    const label = document.createElement('label');
+    label.className = 'menu-filtro-item';
+    label.dataset.valor = v.toLowerCase();
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = marcados.has(v);
+    chk.addEventListener('change', () => {
+      if (chk.checked) marcados.add(v); else marcados.delete(v);
+      aplicar();
+    });
+    const span = document.createElement('span');
+    span.textContent = v;
+    label.append(chk, span);
+    lista.appendChild(label);
   });
 
-  if (pct === 'desc' || pct === 'asc') {
-    const signo = pct === 'desc' ? -1 : 1;
-    filas.sort((a, b) => {
-      if (a.porcentaje == null && b.porcentaje == null) return 0;
-      if (a.porcentaje == null) return 1;
-      if (b.porcentaje == null) return -1;
-      return signo * (a.porcentaje - b.porcentaje);
+  chkTodos.addEventListener('change', () => {
+    lista.querySelectorAll('input').forEach((chk, i) => {
+      chk.checked = chkTodos.checked;
+      if (chkTodos.checked) marcados.add(todos[i]); else marcados.delete(todos[i]);
     });
-  }
+    aplicar();
+  });
+  buscar.addEventListener('input', () => {
+    const q = buscar.value.trim().toLowerCase();
+    lista.querySelectorAll('.menu-filtro-item').forEach((el) => {
+      el.hidden = q !== '' && !el.dataset.valor.includes(q);
+    });
+  });
 
-  return filas;
+  document.body.appendChild(menu);
+  const r = boton.getBoundingClientRect();
+  menu.style.top = `${r.bottom + window.scrollY + 4}px`;
+  menu.style.left = `${Math.max(8, Math.min(r.left + window.scrollX, window.innerWidth - menu.offsetWidth - 8))}px`;
+  menuAbierto = menu;
+  chkTodos.checked = marcados.size === todos.length;
+  chkTodos.indeterminate = marcados.size > 0 && marcados.size < todos.length;
+  buscar.focus();
+}
+
+filtroBusqueda.addEventListener('input', dibujar);
+
+function filtrar() {
+  // Todas las palabras deben aparecer (en cualquier orden y en cualquier
+  // columna de texto) para que "diego castro" encuentre "Diego Felipe Castro".
+  const palabras = filtroBusqueda.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return datos.filter((d) => {
+    if (!Object.entries(filtros).every(
+      ([col, permitidos]) => !permitidos || permitidos.has(COLUMNAS_FILTRO[col](d)),
+    )) return false;
+    if (!palabras.length) return true;
+    const bolsa = `${d.nombre} ${d.cedula} ${d.cargo || ''} ${d.servicio || ''} ${d.entidad || ''}`.toLowerCase();
+    return palabras.every((palabra) => bolsa.includes(palabra));
+  });
 }
 
 function dibujar() {
@@ -216,7 +233,6 @@ function dibujar() {
   const filas = filtrar();
 
   const listos = datos.filter((d) => d.porcentaje != null);
-  if (resumenListos) resumenListos.textContent = listos.length || '—';
   resumenPromedio.textContent = listos.length
     ? `${Math.round(listos.reduce((acc, d) => acc + d.porcentaje, 0) / listos.length)}%`
     : '—';
@@ -242,12 +258,11 @@ function dibujar() {
       <td>${escapar(d.cedula)}</td>
       <td>${escapar(d.cargo || '—')}</td>
       <td>${escapar(d.servicio || '—')}</td>
+      <td>${escapar(d.entidad || '—')}</td>
       <td>${d.salon ? escapar(textoInscripcion(d)) : '<span class="etiqueta-estado etiqueta-sin-salon">Sin salón</span>'}</td>
       <td>${escapar(textoAsistencia(d.asistencia_en))}</td>
       <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
       <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${d.total_posttest || totalPreguntasPretest}` : '—'}</td>
-      <td>${escapar(d.entidad || '—')}</td>
-      ${restringido || sinEstado ? '' : `<td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>`}
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
       ${restringido ? '' : `<td>${etiquetaOrigen(d.origen_personal)}</td>`}
       <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>
@@ -273,7 +288,7 @@ function alternarDetalle(tr, d) {
   const detalle = document.createElement('tr');
   detalle.className = 'fila-detalle';
   detalle.innerHTML = `
-    <td colspan="13">
+    <td colspan="12">
       <div class="componentes-grid">
         ${d.componentes.map((c) => `
           <div class="componente-item">
@@ -285,13 +300,6 @@ function alternarDetalle(tr, d) {
     </td>
   `;
   tr.after(detalle);
-}
-
-function etiquetaEstado(estado) {
-  return {
-    pendiente: 'Pendiente', procesando: 'Procesando', listo: 'Listo',
-    fallido: 'Fallido', descartado: 'Descartado',
-  }[estado] || estado;
 }
 
 function etiquetaOrigen(origen) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Panel de jefes de servicio — ADN Susana</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
-<link rel="stylesheet" href="css/panel.css?v=20261012b" />
+<link rel="stylesheet" href="css/panel.css?v=20261015d" />
 </head>
 <body>
 <div class="panel">
@@ -25,58 +25,20 @@
       <div class="resumen-general" id="resumen-general">
         <div class="resumen-item">
           <span class="resumen-valor" id="resumen-con-salon">—</span>
-          <span class="resumen-etiqueta">inscritos</span>
+          <span class="resumen-etiqueta">Personas inscritas</span>
         </div>
         <div class="resumen-item">
           <span class="resumen-valor" id="resumen-asistencia">—</span>
-          <span class="resumen-etiqueta">han marcado asistencia</span>
-        </div>
-        <div class="resumen-item" data-solo-completo>
-          <span class="resumen-valor" id="resumen-listos">—</span>
-          <span class="resumen-etiqueta">diagnósticos listos</span>
+          <span class="resumen-etiqueta">Personas Asistieron</span>
         </div>
         <div class="resumen-item">
           <span class="resumen-valor" id="resumen-promedio">—</span>
-          <span class="resumen-etiqueta">promedio general</span>
+          <span class="resumen-etiqueta">Promedio general de ADN Susana</span>
         </div>
         <div class="resumen-item" data-solo-completo>
           <span class="resumen-valor" id="resumen-autorregistro">—</span>
           <span class="resumen-etiqueta">autorregistro</span>
         </div>
-      </div>
-
-      <div class="filtros">
-        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre, cédula, cargo o proceso…" autocomplete="off" />
-        <select id="filtro-proceso"><option value="">Todos los procesos</option></select>
-        <select id="filtro-entidad"><option value="">Todas las entidades</option></select>
-        <select id="filtro-inscripcion">
-          <option value="">Inscripción: todos</option>
-          <option value="con">Ya eligió salón</option>
-          <option value="sin">Sin salón</option>
-        </select>
-        <select id="filtro-dia"><option value="">Todos los días</option></select>
-        <select id="filtro-salon"><option value="">Todos los salones</option></select>
-        <select id="filtro-origen" data-solo-completo>
-          <option value="">Todos los orígenes</option>
-          <option value="rrhh">Roster RR.HH.</option>
-          <option value="autorregistro">Autorregistro</option>
-        </select>
-        <select id="filtro-estado" data-solo-completo data-solo-estado>
-          <option value="">Todos los estados</option>
-          <option value="listo">Listo</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="procesando">Procesando</option>
-          <option value="fallido">Fallido</option>
-        </select>
-        <select id="filtro-pct">
-          <option value="">% global: todos</option>
-          <option value="desc">Mayor a menor</option>
-          <option value="asc">Menor a mayor</option>
-          <option value="alto">≥ 80%</option>
-          <option value="medio">50% – 79%</option>
-          <option value="bajo">&lt; 50%</option>
-          <option value="sin">Sin diagnóstico</option>
-        </select>
       </div>
 
       <details class="escala-detalle">
@@ -90,6 +52,10 @@
         </ol>
       </details>
 
+      <div class="busqueda">
+        <input id="filtro-busqueda" type="search" placeholder="Buscar por nombre, cédula, cargo, proceso o entidad…" autocomplete="off" />
+      </div>
+
       <div class="scroll-superior" id="scroll-superior" aria-hidden="true"><div></div></div>
       <div class="tabla-wrap" id="tabla-wrap">
         <table id="tabla-respuestas">
@@ -99,13 +65,12 @@
               <th>Cédula</th>
               <th>Cargo</th>
               <th>Proceso</th>
-              <th>Inscripción</th>
+              <th data-col-filtro="entidad">Entidad</th>
+              <th data-col-filtro="inscripcion">Inscripción</th>
               <th>Asistencia</th>
               <th>Puntaje Pre-Test</th>
               <th>Puntaje Post-Test</th>
-              <th>Entidad</th>
-              <th data-solo-completo data-solo-estado>Estado</th>
-              <th>% global</th>
+              <th>ADN Susana</th>
               <th data-solo-completo>Origen</th>
               <th></th>
             </tr>
@@ -128,6 +93,6 @@
 
 </div>
 
-<script src="js/gestion-interna.js?v=20261015b"></script>
+<script src="js/gestion-interna.js?v=20261015d"></script>
 </body>
 </html>
