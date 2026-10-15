@@ -1085,6 +1085,43 @@ async def admin_verificar(usuario: str = Depends(admin_actual)):
 
 @app.get("/v1/admin/respuestas")
 async def admin_respuestas(usuario: str = Depends(admin_actual)):
+    """Admin (jefes): lee la tabla `certificacion` (foto generada con
+    scripts/generar_certificacion.py). Talento humano ("induccion") sigue con la
+    vista en vivo, sin estado ni origen."""
+    if usuario in USUARIOS_SIN_ESTADO_NI_ORIGEN:
+        return await _respuestas_en_vivo(usuario)
+
+    p = await db.pool()
+    filas = await p.fetch("select * from certificacion order by nombre")
+    respuestas = []
+    for f in filas:
+        dia, horario, salon = (f["inscripcion"].split(" · ") + [None, None, None])[:3] if f["inscripcion"] else (None, None, None)
+        respuestas.append({
+            "nombre": f["nombre"] or "— (sin ficha en personal)",
+            "cedula": str(f["cedula"]),
+            "cargo": f["cargo"], "servicio": f["proceso"], "entidad": f["entidad"],
+            "dia": dia, "horario": horario, "salon": salon,
+            "asistencia_en": f["asistencia"].isoformat() if f["asistencia"] else None,
+            "puntaje_pretest": f["puntaje_pretest"],
+            "puntaje_posttest": f["puntaje_posttest"],
+            "total_posttest": f["total_posttest"],
+            "porcentaje": f["adn_susana"],
+            "origen_personal": f["origen"],
+            "estado": None, "componentes": [],
+        })
+    return JSONResponse(
+        content={
+            "campana": cfg.campana,
+            "total_preguntas_pretest": len(CLAVE_PRE_TEST),
+            "vista": "certificacion",
+            "restringido": False,
+            "respuestas": respuestas,
+        },
+        headers={"X-Session-Token": _firmar_token(usuario)},
+    )
+
+
+async def _respuestas_en_vivo(usuario: str):
     """Asistencia y diagnóstico por persona: nombre, cédula, área, estado,
     % global y % por componente. Sin el texto libre que escribió cada quien
     — eso sigue siendo confidencial incluso para el panel de jefes.

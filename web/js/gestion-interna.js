@@ -33,6 +33,7 @@ const HORARIOS_TEXTO = { '7:30': '7:30 a.m.', '13:30': '1:30 p.m.' };
 let datos = [];
 let totalPreguntasPretest = 0;
 let filaAbierta = null;
+let sinEstado = false; // vista de certificación: sin columna ni filtro de estado
 let restringido = false; // talento humano: sin estado, origen, autorregistro ni diagnósticos listos
 
 // Sesión deslizante: cualquier interacción real reinicia el reloj de
@@ -75,6 +76,12 @@ async function cargar() {
     datos = json.respuestas;
     totalPreguntasPretest = json.total_preguntas_pretest || 0;
     restringido = !!json.restringido;
+    // Vista de certificación (admin): foto sin diagnóstico por componente ni estado.
+    if (json.vista === 'certificacion') {
+      document.querySelectorAll('[data-solo-estado]').forEach((el) => el.remove());
+      document.querySelector('.escala-detalle')?.remove();
+      sinEstado = true;
+    }
     if (restringido) document.querySelectorAll('[data-solo-completo]').forEach((el) => el.remove());
     poblarFiltroProceso();
     poblarFiltroEntidad();
@@ -240,7 +247,7 @@ function dibujar() {
       <td class="col-pct">${d.puntaje_pretest != null ? `${d.puntaje_pretest}/${totalPreguntasPretest}` : '—'}</td>
       <td class="col-pct">${d.puntaje_posttest != null ? `${d.puntaje_posttest}/${d.total_posttest || totalPreguntasPretest}` : '—'}</td>
       <td>${escapar(d.entidad || '—')}</td>
-      ${restringido ? '' : `<td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>`}
+      ${restringido || sinEstado ? '' : `<td>${d.estado ? `<span class="etiqueta-estado etiqueta-${d.estado}">${etiquetaEstado(d.estado)}</span>` : '—'}</td>`}
       <td class="col-pct">${d.porcentaje != null ? `${d.porcentaje}%` : '—'}</td>
       ${restringido ? '' : `<td>${etiquetaOrigen(d.origen_personal)}</td>`}
       <td class="col-expandir">${d.componentes.length ? '▾' : ''}</td>
