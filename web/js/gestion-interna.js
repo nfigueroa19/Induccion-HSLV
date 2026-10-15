@@ -218,7 +218,8 @@ function dibujar() {
   document.getElementById('resumen-asistencia').textContent = datos.length
     ? datos.filter((d) => d.asistencia_en).length
     : '—';
-  document.getElementById('resumen-autorregistro').textContent = datos.length
+  const tarjetaAuto = document.getElementById('resumen-autorregistro');
+  if (tarjetaAuto) tarjetaAuto.textContent = datos.length
     ? datos.filter((d) => d.origen_personal === 'autorregistro').length
     : '—';
 
