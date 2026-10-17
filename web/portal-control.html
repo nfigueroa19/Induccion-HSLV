@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Control del portal</title>
+<link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
+<link rel="stylesheet" href="css/panel.css?v=20260927f" />
+<style>
+  .estado{font-size:1.4rem;font-weight:700;margin:16px 0;padding:14px;border-radius:10px;text-align:center}
+  .estado.abierto{background:#EEF3E6;color:#327531}
+  .estado.cerrado{background:#FBE9E7;color:#B3261E}
+  .acciones{display:flex;gap:10px;margin-top:8px}
+  .acciones button{flex:1}
+  .secundario{background:#fff;color:#29235C;border:1px solid #DCE3D5}
+</style>
+</head>
+<body class="pagina-login">
+
+<main class="tarjeta-login">
+  <img class="mark-horizontal" src="Assets/Logo/hslv-horizontal.png" alt="Hospital Susana López de Valencia E.S.E." />
+  <h1>Control del portal</h1>
+  <p class="nota">Abrir o cerrar la Reinducción</p>
+
+  <form id="form-login" novalidate autocomplete="off">
+    <label for="usuario">Usuario</label>
+    <input id="usuario" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus />
+    <label for="contrasena">Contraseña</label>
+    <input id="contrasena" type="password" autocomplete="new-password" required />
+    <p id="error-login" class="error" hidden></p>
+    <button type="submit">Ingresar</button>
+  </form>
+
+  <section id="control" hidden>
+    <div id="estado" class="estado">…</div>
+    <p id="error-control" class="error" hidden></p>
+    <div class="acciones">
+      <button id="btn-abrir" type="button">Abrir portal</button>
+      <button id="btn-cerrar" type="button">Cerrar portal</button>
+    </div>
+    <div class="acciones"><button id="btn-salir" type="button" class="secundario">Salir</button></div>
+  </section>
+</main>
+
+<script src="js/portal-control.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import hmac
 import json
 import logging
 import re
+import time
 import unicodedata
 import uuid
 from contextlib import asynccontextmanager
@@ -164,7 +165,26 @@ MENSAJE_CIERRE = (
 )
 # Lo único que sigue abierto con PORTAL_CERRADO=true. Lista de permitidos (no de
 # bloqueados): una ruta nueva queda cerrada por defecto.
-RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado")
+RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado", "/v1/portal")
+
+# Interruptor dinámico: la fila `config_portal` (alternada desde la página
+# portal-control) manda sobre PORTAL_CERRADO; sin fila, vale la variable de
+# entorno. Se cachea unos segundos para no consultar la BD en cada petición.
+_CACHE_PORTAL_SEG = 5.0
+_portal = {"cerrado": cfg.portal_cerrado, "hasta": 0.0}
+
+
+async def portal_cerrado() -> bool:
+    ahora = time.monotonic()
+    if ahora >= _portal["hasta"]:
+        try:
+            p = await db.pool()
+            fila = await p.fetchrow("select cerrado from config_portal where clave = 'portal'")
+            _portal["cerrado"] = fila["cerrado"] if fila else cfg.portal_cerrado
+        except Exception:
+            log.exception("no se pudo leer config_portal; se conserva el último estado")
+        _portal["hasta"] = ahora + _CACHE_PORTAL_SEG
+    return _portal["cerrado"]
 
 
 class CierrePortal:
@@ -178,10 +198,10 @@ class CierrePortal:
 
     async def __call__(self, scope, receive, send):
         if (
-            cfg.portal_cerrado
-            and scope["type"] == "http"
+            scope["type"] == "http"
             and scope["method"] != "OPTIONS"
             and not scope["path"].startswith(RUTAS_ABIERTAS_CERRADO)
+            and await portal_cerrado()
         ):
             await JSONResponse({"detail": MENSAJE_CIERRE}, status_code=410)(scope, receive, send)
             return
@@ -1079,6 +1099,49 @@ async def admin_verificar(usuario: str = Depends(admin_actual)):
     no hace falta, ahí el WiFi mismo es el control de acceso."""
     return JSONResponse(
         content={"ok": True},
+        headers={"X-Session-Token": _firmar_token(usuario)},
+    )
+
+
+# Quién puede abrir/cerrar el portal. Es un usuario aparte del panel de jefes
+# y de talento humano (se crea con scripts/crear_admin.py).
+USUARIOS_CONTROL_PORTAL = {"control"}
+
+
+class PortalIn(BaseModel):
+    cerrado: bool
+
+
+@app.get("/v1/portal")
+async def portal_estado():
+    """Público: lo consultan las páginas del front para mostrar el aviso de
+    cerrado. No revela nada más que el booleano."""
+    return JSONResponse(
+        content={"cerrado": await portal_cerrado()},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/v1/admin/portal")
+async def admin_portal(payload: PortalIn, usuario: str = Depends(admin_actual)):
+    if usuario not in USUARIOS_CONTROL_PORTAL:
+        raise HTTPException(status_code=403, detail="Este usuario no puede abrir/cerrar el portal.")
+    p = await db.pool()
+    await p.execute(
+        """
+        insert into config_portal (clave, cerrado, actualizado_por)
+        values ('portal', $1, $2)
+        on conflict (clave) do update
+          set cerrado = excluded.cerrado, actualizado_en = now(),
+              actualizado_por = excluded.actualizado_por
+        """,
+        payload.cerrado, usuario,
+    )
+    _portal["cerrado"] = payload.cerrado
+    _portal["hasta"] = time.monotonic() + _CACHE_PORTAL_SEG
+    log.info("portal %s por %s", "CERRADO" if payload.cerrado else "ABIERTO", usuario)
+    return JSONResponse(
+        content={"cerrado": payload.cerrado},
         headers={"X-Session-Token": _firmar_token(usuario)},
     )
 
