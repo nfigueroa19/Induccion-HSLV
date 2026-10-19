@@ -6,7 +6,7 @@
 <title>Verificar certificado — HSLV</title>
 <link rel="icon" type="image/png" href="Assets/Logo/hslv-mark.png" />
 <link rel="stylesheet" href="css/style.css?v=20261012c" />
-<link rel="stylesheet" href="css/verificar.css" />
+<link rel="stylesheet" href="css/verificar.css?v=20261019a" />
 <link rel="stylesheet" href="css/splash.css" />
 </head>
 <body>
@@ -32,7 +32,7 @@
     <div class="mark"><img src="Assets/Logo/hslv.jpg" alt="" aria-hidden="true" /></div>
     <div class="wordmark">
       <div class="name">Hospital Susana López de Valencia E.S.E.</div>
-      <div class="sub">Verificación de certificados</div>
+      <div class="sub">Memoria, Huella e Identidad</div>
       <div class="sub">Reinducción Institucional 2026</div>
     </div>
   </div>
@@ -41,7 +41,7 @@
     <div class="hero">
       <p class="eyebrow">Verificación de certificados</p>
       <h1>Comprueba que un certificado es auténtico</h1>
-      <p class="lede">Sube el archivo PDF tal como fue entregado por el Hospital. Revisaremos si fue emitido por la institución y si su contenido no ha sido modificado.</p>
+      <p class="lede">Sube el archivo PDF original. Revisaremos si fue emitido por la institución y si su contenido no ha sido modificado.</p>
     </div>
 
     <form id="form-verificar" autocomplete="off">
@@ -49,7 +49,7 @@
         <label for="archivo">Certificado en PDF</label>
         <label class="zona-archivo" id="zona" for="archivo">
           <span class="zona-titulo" id="zona-titulo">Toca para elegir el archivo</span>
-          <span class="zona-sub" id="zona-sub">o arrástralo hasta aquí · solo PDF, máximo 5 MB</span>
+          <span class="zona-sub" id="zona-sub"></span>
         </label>
         <input type="file" id="archivo" name="archivo" accept="application/pdf,.pdf" hidden />
         <p class="hint">Debe ser el archivo original, sin capturas de pantalla ni fotos.</p>
@@ -71,14 +71,15 @@
 
   <footer class="site-footer">
     <img class="site-footer-logo" src="Assets/Logo/hslv-mark.png" alt="" aria-hidden="true" />
-    <p class="site-footer-contacto">¿Dudas sobre un certificado? Escríbenos a <a href="mailto:unidadia@hosusana.gov.co">unidadia@hosusana.gov.co</a></p>
+    <p class="site-footer-contacto">¿Tienes dudas o problemas? Escríbenos a <a href="mailto:unidadia@hosusana.gov.co">unidadia@hosusana.gov.co</a></p>
     <p class="site-footer-dev">Desarrollado por Ing. Nicolás Figueroa Maca — Unidad de Inteligencia Artificial, Hospital Susana López de Valencia E.S.E.</p>
+    <p class="site-footer-legal">Tus datos son tratados conforme a nuestra <a href="https://hosusana.gov.co/Transparencia/PoliticasLineamientos/Pol%C3%ADtica%20tratamiento%20de%20datos.pdf" target="_blank" rel="noopener">Política de tratamiento de datos personales</a>.</p>
     <p class="site-footer-copy">© 2026 Hospital Susana López de Valencia E.S.E. — Todos los derechos reservados.</p>
   </footer>
 
 </div>
 
-<script src="js/verificar.js"></script>
+<script src="js/verificar.js?v=20261019b"></script>
 <script src="js/splash.js"></script>
 </body>
 </html>

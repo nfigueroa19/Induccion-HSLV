@@ -1,15 +1,17 @@
 // Verificación pública de certificados de la Reinducción 2026.
 // Envía el PDF a POST /v1/verificar-certificado y muestra el resultado.
 // Respuesta esperada: { estado: "autentico" | "alterado" | "sin_marca" | "revocado",
-//                       nombre, cedula_parcial, entidad, emitido_en }
+//                       nombre, cedula, entidad, emitido_en }
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8000'
   : 'https://induccion-hslv-api.onrender.com';
+const TEXTO_SUB = matchMedia('(hover: none)').matches ? 'Solo PDF · máximo 5 MB' : 'o arrástralo hasta aquí · solo PDF, máximo 5 MB';
 const MAX_BYTES = 5 * 1024 * 1024;
 
 const $ = (id) => document.getElementById(id);
 const form = $('form-verificar'), input = $('archivo'), zona = $('zona'), btn = $('btn-verificar'), status = $('status');
 const resultado = $('resultado');
+$('zona-sub').textContent = TEXTO_SUB;
 
 fetch(`${API}/healthz`).catch(() => {});   // despierta el servicio gratuito
 
@@ -67,7 +69,7 @@ function mostrar(r) {
   const dl = $('res-datos'); dl.textContent = '';
   const filas = r.estado === 'sin_marca' ? [] : [
     [r.estado === 'alterado' ? 'Emitido realmente a' : 'Emitido a', r.nombre],
-    ['Cédula', r.cedula_parcial],
+    ['Cédula', r.cedula],
     ['Entidad', r.entidad],
     ['Fecha de emisión', r.emitido_en],
   ];
@@ -105,6 +107,6 @@ form.addEventListener('submit', async (ev) => {
 $('btn-otro').addEventListener('click', () => {
   input.value = ''; btn.disabled = true; zona.classList.remove('con-archivo');
   $('zona-titulo').textContent = 'Toca para elegir el archivo';
-  $('zona-sub').textContent = 'o arrástralo hasta aquí · solo PDF, máximo 5 MB';
+  $('zona-sub').textContent = TEXTO_SUB;
   resultado.hidden = true; form.hidden = false;
 });

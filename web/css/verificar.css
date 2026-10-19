@@ -1,14 +1,16 @@
 /* Página pública de verificación de certificados. Usa los tokens de style.css. */
-.zona-archivo {
+.field label.zona-archivo {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 26px 16px; text-align: center; cursor: pointer;
   background: var(--color-field-bg); border: 2px dashed var(--color-border); border-radius: 12px;
   transition: border-color var(--duration-quick) var(--ease-out), background-color var(--duration-quick) var(--ease-out);
 }
-.zona-archivo:hover, .zona-archivo.arrastrando { border-color: var(--color-accent); background: #F1F6E8; }
-.zona-archivo.con-archivo { border-style: solid; border-color: var(--color-primary); }
-.zona-titulo { font-weight: 700; font-size: 14.5px; color: var(--color-navy); word-break: break-all; }
-.zona-sub { font-size: 12px; color: var(--color-ink-soft); }
+.field label.zona-archivo:hover, .field label.zona-archivo.arrastrando { border-color: var(--color-accent); background: #F1F6E8; }
+.field label.zona-archivo.con-archivo { border-style: solid; border-color: var(--color-primary); }
+.zona-titulo {
+  display: block; font-weight: 700; font-size: 14.5px; color: var(--color-navy); word-break: break-all; }
+.zona-sub {
+  display: block; font-size: 12px; color: var(--color-ink-soft); }
 
 .resultado {
   margin-top: 28px; padding: 24px 20px; text-align: center; position: relative; z-index: 1;

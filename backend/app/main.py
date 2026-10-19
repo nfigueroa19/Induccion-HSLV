@@ -315,7 +315,7 @@ async def verificar_certificado(request: Request, archivo: UploadFile = File(...
     return {
         "estado": "revocado" if r["revocado"] else ("autentico" if coincide else "alterado"),
         "nombre": r["nombre"],
-        "cedula_parcial": "•••••• " + str(r["cedula"])[-3:],
+        "cedula": f"{r['cedula']:,}".replace(",", "."),
         "entidad": r["entidad"],
         "emitido_en": f"{f.day} de {_MESES[f.month - 1]} de {f.year}",
     }
