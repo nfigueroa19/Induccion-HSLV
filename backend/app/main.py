@@ -13,7 +13,7 @@ from pathlib import Path
 
 import bcrypt
 import jwt
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -25,6 +25,7 @@ from slowapi.util import get_remote_address
 
 from . import db
 from . import eventos
+from . import marca_agua
 from .config import cfg
 from .correo import gauge_png_bytes
 from .dispositivo import mac_desde_ip
@@ -165,7 +166,7 @@ MENSAJE_CIERRE = (
 )
 # Lo único que sigue abierto con PORTAL_CERRADO=true. Lista de permitidos (no de
 # bloqueados): una ruta nueva queda cerrada por defecto.
-RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado", "/v1/portal")
+RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado", "/v1/portal", "/v1/verificar-certificado")
 
 # Interruptor dinámico: la fila `config_portal` (alternada desde la página
 # portal-control) manda sobre PORTAL_CERRADO; sin fila, vale la variable de
@@ -275,6 +276,49 @@ class RespuestaIn(BaseModel):
 async def healthz():
     """Sondeo de Render y despertador desde el navegador. No toca la base."""
     return {"ok": True}
+
+
+# --- Verificación pública de certificados -------------------------------------
+# Lee la marca invisible del fondo del PDF (ver app/marca_agua.py), busca a quién se emitió en
+# `certificados_emitidos` y compara con el nombre/cédula del texto del PDF. Sin QR ni firma.
+_MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+_BOG = timezone(timedelta(hours=-5))
+_MAX_CERT_BYTES = 5 * 1024 * 1024
+
+
+def _sin_tildes(s: str) -> str:
+    return " ".join(unicodedata.normalize("NFD", s or "").encode("ascii", "ignore").decode().upper().split())
+
+
+@app.post("/v1/verificar-certificado")
+@limiter.limit("10/minute")
+async def verificar_certificado(request: Request, archivo: UploadFile = File(...)):
+    datos = await archivo.read(_MAX_CERT_BYTES + 1)
+    if len(datos) > _MAX_CERT_BYTES:
+        raise HTTPException(status_code=413, detail="El archivo pesa más de 5 MB.")
+    if not datos.startswith(b"%PDF"):
+        raise HTTPException(status_code=422, detail="El archivo debe ser un PDF.")
+    try:
+        idn, valido, _conf, texto = await asyncio.to_thread(marca_agua.leer_pdf, datos)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="No se pudo leer el PDF.")
+    if not valido:
+        return {"estado": "sin_marca"}
+    p = await db.pool()
+    r = await p.fetchrow(
+        "select cedula, nombre, entidad, emitido_en, revocado from certificados_emitidos where id = $1", idn)
+    if not r:
+        return {"estado": "sin_marca"}
+    cc_pdf = re.sub(r"\D", "", " ".join(re.findall(r"\d[\d.]{5,}\d", texto)))
+    coincide = _sin_tildes(r["nombre"]) in _sin_tildes(texto) and cc_pdf == str(r["cedula"])
+    f = r["emitido_en"].astimezone(_BOG)
+    return {
+        "estado": "revocado" if r["revocado"] else ("autentico" if coincide else "alterado"),
+        "nombre": r["nombre"],
+        "cedula_parcial": "•••••• " + str(r["cedula"])[-3:],
+        "entidad": r["entidad"],
+        "emitido_en": f"{f.day} de {_MESES[f.month - 1]} de {f.year}",
+    }
 
 
 @app.get("/v1/gauge/{porcentaje}")

@@ -1,0 +1,39 @@
+/* Página pública de verificación de certificados. Usa los tokens de style.css. */
+.zona-archivo {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 26px 16px; text-align: center; cursor: pointer;
+  background: var(--color-field-bg); border: 2px dashed var(--color-border); border-radius: 12px;
+  transition: border-color var(--duration-quick) var(--ease-out), background-color var(--duration-quick) var(--ease-out);
+}
+.zona-archivo:hover, .zona-archivo.arrastrando { border-color: var(--color-accent); background: #F1F6E8; }
+.zona-archivo.con-archivo { border-style: solid; border-color: var(--color-primary); }
+.zona-titulo { font-weight: 700; font-size: 14.5px; color: var(--color-navy); word-break: break-all; }
+.zona-sub { font-size: 12px; color: var(--color-ink-soft); }
+
+.resultado {
+  margin-top: 28px; padding: 24px 20px; text-align: center; position: relative; z-index: 1;
+  border: 1px solid var(--color-border); border-top-width: 5px; border-radius: 12px; background: var(--color-surface);
+  animation: entrada var(--duration-medium) var(--ease-out) both;
+}
+.resultado[hidden] { display: none; }
+.resultado.ok { border-top-color: var(--color-accent); }
+.resultado.alterado { border-top-color: #C0392B; }
+.resultado.sin-marca, .resultado.revocado { border-top-color: #D68910; }
+.resultado-sello {
+  width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff;
+}
+.ok .resultado-sello { background: var(--color-primary); }
+.alterado .resultado-sello { background: #C0392B; }
+.sin-marca .resultado-sello, .revocado .resultado-sello { background: #D68910; }
+.resultado h2 { font-family: Georgia, Cambria, "Times New Roman", serif; font-size: 21px; margin: 0 0 8px; text-wrap: balance; }
+.res-texto { font-size: 14.5px; line-height: 1.6; color: var(--color-ink-soft); margin: 0 0 16px; }
+.res-datos { margin: 0 0 14px; text-align: left; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; }
+.res-datos:empty { display: none; }
+.res-datos div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 13.5px; }
+.res-datos div:nth-child(even) { background: var(--color-field-bg); }
+.res-datos dt { color: var(--color-ink-soft); }
+.res-datos dd { margin: 0; font-weight: 700; text-align: right; }
+.res-nota { font-size: 12.5px; line-height: 1.5; color: var(--color-ink-soft); margin: 0 0 18px; }
+.res-nota:empty { display: none; }
+button.submit.secundario { background: transparent; color: var(--color-primary); border: 1.5px solid var(--color-primary); }

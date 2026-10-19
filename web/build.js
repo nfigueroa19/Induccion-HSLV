@@ -33,8 +33,8 @@ const SALIDA = path.join(RAIZ, nombreSalida);
 // sus JS no se publican. El código fuente no se toca: para reabrir, compilar sin
 // `--cerrado`. Backup del portal abierto: tag git `portal-abierto-2026-10-15`.
 const CERRADO = process.argv.includes("--cerrado");
-const PAGINAS_ABIERTAS = new Set(["login.html", "gestion-interna.html", "dashboard.html"]);
-const JS_ABIERTOS = new Set(["login.js", "gestion-interna.js", "dashboard.js", "splash.js"]);
+const PAGINAS_ABIERTAS = new Set(["login.html", "gestion-interna.html", "dashboard.html", "verificar-certificado.html"]);
+const JS_ABIERTOS = new Set(["login.js", "gestion-interna.js", "dashboard.js", "splash.js", "verificar.js"]);
 const PAGINAS_CERRADAS = ["index.html", "inscripcion.html", "asistencia.html", "cierre.html"];
 const HTML_CIERRE = `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
