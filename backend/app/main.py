@@ -441,6 +441,18 @@ async def buscar_personal(request: Request, cedula: str):
     await exigir_asistente(limpia)
 
     p = await db.pool()
+    # index.html (ADN Susana) lo usa para no hacer repetir el diagnóstico a quien
+    # ya respondió y llevarlo al post-test. Solo devuelve el booleano.
+    cedula_hash = hmac.new(
+        cfg.pepper_cedula.encode(), limpia.encode(), hashlib.sha256
+    ).hexdigest()
+    respondio_adn = bool(await p.fetchval(
+        """
+        select true from respuestas r join identidades i on i.id = r.identidad_id
+         where i.campana = $1 and i.cedula_hash = $2 limit 1
+        """,
+        cfg.campana, cedula_hash,
+    ))
     fila = await p.fetchrow(
         """
         select nombre_completo, cargo, proceso, entidad,
@@ -450,11 +462,12 @@ async def buscar_personal(request: Request, cedula: str):
         int(limpia),
     )
     if fila is None:
-        return {"existe": False, "completo": False}
+        return {"existe": False, "completo": False, "respondio_adn": respondio_adn}
     completo = fila["entidad"] is not None and fila["tiene_correo"]
     return {
         "existe": True,
         "completo": completo,
+        "respondio_adn": respondio_adn,
         "nombre": fila["nombre_completo"],
         "cargo": fila["cargo"],
         "proceso": fila["proceso"],

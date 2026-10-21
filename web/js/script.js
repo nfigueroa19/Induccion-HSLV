@@ -176,6 +176,12 @@ formCedula.addEventListener('submit', async (e) => {
     const data = await r.json();
     statusCedula.textContent = '';
 
+    // Ya hizo el diagnóstico: no se le pide repetirlo, se le lleva al post-test.
+    if (data.respondio_adn) {
+      sugerirPosttest(statusCedula);
+      return;
+    }
+
     if (data.existe && data.completo) {
       nombreConfirmado = data.nombre || '';
       mostrarPasoFormulario();
@@ -195,6 +201,18 @@ formCedula.addEventListener('submit', async (e) => {
     statusCedula.textContent = 'Sin conexión con el servidor. Revisa tu red e intenta de nuevo.';
   }
 });
+
+// Mensaje de "ya tenemos tu respuesta" + botón al post-test, justo debajo de `anchor`.
+function sugerirPosttest(anchor) {
+  anchor.textContent = 'Ya tenemos tu respuesta registrada. ¡Gracias! Ahora continúa con el post-test.';
+  if (document.getElementById('btn-posttest-form')) return;
+  const enlace = document.createElement('a');
+  enlace.id = 'btn-posttest-form';
+  enlace.className = 'submit';
+  enlace.href = 'cierre.html';
+  enlace.textContent = 'Realizar Post-Test';
+  anchor.after(enlace);
+}
 
 function mostrarPasoFormulario() {
   pasoCedula.hidden = true;
@@ -293,16 +311,8 @@ form.addEventListener('submit', async (e) => {
       const data = await r.json();
 
       if (data.duplicado && !data.id) {
-        status.textContent = 'Ya teníamos tu respuesta registrada. ¡Gracias! Ahora continúa con el post-test.';
         textarea.disabled = true;
-        if (!document.getElementById('btn-posttest-form')) {
-          const enlace = document.createElement('a');
-          enlace.id = 'btn-posttest-form';
-          enlace.className = 'submit';
-          enlace.href = 'cierre.html';
-          enlace.textContent = 'Realizar Post-Test';
-          status.after(enlace);
-        }
+        sugerirPosttest(status);
         return;
       }
 
