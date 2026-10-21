@@ -178,6 +178,9 @@ formCedula.addEventListener('submit', async (e) => {
 
     // Ya hizo el diagnóstico: no se le pide repetirlo, se le lleva al post-test.
     if (data.respondio_adn) {
+      pasoCedula.querySelector('.hero').hidden = true;
+      formCedula.querySelector('.field').hidden = true;
+      btnCedula.hidden = true;
       sugerirPosttest(statusCedula);
       return;
     }
