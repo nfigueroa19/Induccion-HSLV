@@ -11,6 +11,7 @@
   .estado{font-size:1.4rem;font-weight:700;margin:16px 0;padding:14px;border-radius:10px;text-align:center}
   .estado.abierto{background:#EEF3E6;color:#327531}
   .estado.cerrado{background:#FBE9E7;color:#B3261E}
+  .estado.asistentes{background:#FFF4D6;color:#8A5A00}
   .acciones{display:flex;gap:10px;margin-top:8px}
   .acciones button{flex:1}
   .secundario{background:#fff;color:#29235C;border:1px solid #DCE3D5}
@@ -36,7 +37,8 @@
     <div id="estado" class="estado">…</div>
     <p id="error-control" class="error" hidden></p>
     <div class="acciones">
-      <button id="btn-abrir" type="button">Abrir portal</button>
+      <button id="btn-abrir" type="button">Abrir a todos</button>
+      <button id="btn-asistentes" type="button">Solo asistentes</button>
       <button id="btn-cerrar" type="button">Cerrar portal</button>
     </div>
     <div class="acciones"><button id="btn-salir" type="button" class="secundario">Salir</button></div>

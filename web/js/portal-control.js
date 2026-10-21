@@ -11,12 +11,15 @@ const estado = document.getElementById('estado');
 const errControl = document.getElementById('error-control');
 const btnAbrir = document.getElementById('btn-abrir');
 const btnCerrar = document.getElementById('btn-cerrar');
+const btnAsistentes = document.getElementById('btn-asistentes');
 
-function pintar(cerrado) {
-  estado.textContent = cerrado ? 'PORTAL CERRADO' : 'PORTAL ABIERTO';
-  estado.className = 'estado ' + (cerrado ? 'cerrado' : 'abierto');
-  btnAbrir.disabled = !cerrado;
-  btnCerrar.disabled = cerrado;
+function pintar({ cerrado, solo_asistentes: soloAsistentes }) {
+  const modo = cerrado ? 'cerrado' : soloAsistentes ? 'asistentes' : 'abierto';
+  estado.textContent = { cerrado: 'PORTAL CERRADO', asistentes: 'ABIERTO SOLO PARA ASISTENTES', abierto: 'PORTAL ABIERTO A TODOS' }[modo];
+  estado.className = 'estado ' + modo;
+  btnAbrir.disabled = modo === 'abierto';
+  btnAsistentes.disabled = modo === 'asistentes';
+  btnCerrar.disabled = modo === 'cerrado';
 }
 
 function salir() {
@@ -27,24 +30,24 @@ function salir() {
 
 async function cargarEstado() {
   const r = await fetch(`${API}/v1/portal`, { cache: 'no-store' });
-  pintar((await r.json()).cerrado);
+  pintar(await r.json());
 }
 
-async function cambiar(cerrado) {
+async function cambiar(cerrado, soloAsistentes = false) {
   errControl.hidden = true;
-  btnAbrir.disabled = btnCerrar.disabled = true;
+  btnAbrir.disabled = btnAsistentes.disabled = btnCerrar.disabled = true;
   try {
     const r = await fetch(`${API}/v1/admin/portal`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem(CLAVE)}` },
-      body: JSON.stringify({ cerrado }),
+      body: JSON.stringify({ cerrado, solo_asistentes: soloAsistentes }),
     });
     if (r.status === 401) { salir(); return; }
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.detail || 'No se pudo cambiar el estado.');
     const nuevo = r.headers.get('X-Session-Token');
     if (nuevo) sessionStorage.setItem(CLAVE, nuevo);
-    pintar(d.cerrado);
+    pintar(d);
   } catch (err) {
     errControl.textContent = err.message;
     errControl.hidden = false;
@@ -59,6 +62,7 @@ function mostrarControl() {
 }
 
 btnAbrir.addEventListener('click', () => cambiar(false));
+btnAsistentes.addEventListener('click', () => cambiar(false, true));
 btnCerrar.addEventListener('click', () => cambiar(true));
 document.getElementById('btn-salir').addEventListener('click', salir);
 

@@ -293,8 +293,16 @@ form.addEventListener('submit', async (e) => {
       const data = await r.json();
 
       if (data.duplicado && !data.id) {
-        status.textContent = 'Ya teníamos tu respuesta registrada. ¡Gracias!';
+        status.textContent = 'Ya teníamos tu respuesta registrada. ¡Gracias! Ahora continúa con el post-test.';
         textarea.disabled = true;
+        if (!document.getElementById('btn-posttest-form')) {
+          const enlace = document.createElement('a');
+          enlace.id = 'btn-posttest-form';
+          enlace.className = 'submit';
+          enlace.href = 'cierre.html';
+          enlace.textContent = 'Realizar Post-Test';
+          status.after(enlace);
+        }
         return;
       }
 

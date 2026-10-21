@@ -172,20 +172,42 @@ RUTAS_ABIERTAS_CERRADO = ("/healthz", "/v1/admin/", "/v1/dashboard", "/v1/estado
 # portal-control) manda sobre PORTAL_CERRADO; sin fila, vale la variable de
 # entorno. Se cachea unos segundos para no consultar la BD en cada petición.
 _CACHE_PORTAL_SEG = 5.0
-_portal = {"cerrado": cfg.portal_cerrado, "hasta": 0.0}
+_portal = {"cerrado": cfg.portal_cerrado, "solo_asistentes": False, "hasta": 0.0}
 
 
-async def portal_cerrado() -> bool:
+async def _estado_portal() -> dict:
     ahora = time.monotonic()
     if ahora >= _portal["hasta"]:
         try:
             p = await db.pool()
-            fila = await p.fetchrow("select cerrado from config_portal where clave = 'portal'")
+            fila = await p.fetchrow(
+                "select cerrado, solo_asistentes from config_portal where clave = 'portal'"
+            )
             _portal["cerrado"] = fila["cerrado"] if fila else cfg.portal_cerrado
+            _portal["solo_asistentes"] = fila["solo_asistentes"] if fila else False
         except Exception:
             log.exception("no se pudo leer config_portal; se conserva el último estado")
         _portal["hasta"] = ahora + _CACHE_PORTAL_SEG
-    return _portal["cerrado"]
+    return _portal
+
+
+async def portal_cerrado() -> bool:
+    return (await _estado_portal())["cerrado"]
+
+
+async def exigir_asistente(cedula: str | int) -> None:
+    """Con el portal en modo "solo asistentes", solo pasa quien tiene fila en
+    `asistencia` (campaña activa); el resto recibe el mismo 410 del cierre.
+    Con el portal abierto del todo no consulta nada."""
+    if not (await _estado_portal())["solo_asistentes"]:
+        return
+    limpia = str(cedula).replace(".", "").replace(" ", "").replace("-", "").strip()
+    p = await db.pool()
+    if not limpia.isdigit() or not await p.fetchval(
+        "select true from asistencia where campana = $1 and cedula = $2",
+        cfg.campana, limpia,
+    ):
+        raise HTTPException(status_code=410, detail=MENSAJE_CIERRE)
 
 
 class CierrePortal:
@@ -198,14 +220,18 @@ class CierrePortal:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if (
-            scope["type"] == "http"
-            and scope["method"] != "OPTIONS"
-            and not scope["path"].startswith(RUTAS_ABIERTAS_CERRADO)
-            and await portal_cerrado()
-        ):
-            await JSONResponse({"detail": MENSAJE_CIERRE}, status_code=410)(scope, receive, send)
-            return
+        if scope["type"] == "http" and scope["method"] != "OPTIONS":
+            ruta = scope["path"]
+            estado = await _estado_portal()
+            bloqueado = (
+                (estado["cerrado"] and not ruta.startswith(RUTAS_ABIERTAS_CERRADO))
+                # En modo "solo asistentes" el registro de asistencia sigue cerrado:
+                # si no, cualquiera podría registrarse tarde y entrar.
+                or (estado["solo_asistentes"] and ruta.startswith("/v1/asistencia"))
+            )
+            if bloqueado:
+                await JSONResponse({"detail": MENSAJE_CIERRE}, status_code=410)(scope, receive, send)
+                return
         await self.app(scope, receive, send)
 
 
@@ -412,6 +438,7 @@ async def buscar_personal(request: Request, cedula: str):
     limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
     if not limpia.isdigit():
         raise HTTPException(status_code=422, detail="La cédula debe contener solo números.")
+    await exigir_asistente(limpia)
 
     p = await db.pool()
     fila = await p.fetchrow(
@@ -451,6 +478,7 @@ async def buscar_pre_test(request: Request, cedula: str):
     limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
     if not limpia.isdigit():
         raise HTTPException(status_code=422, detail="La cédula debe contener solo números.")
+    await exigir_asistente(limpia)
 
     p = await db.pool()
     fila = await p.fetchrow(
@@ -535,6 +563,7 @@ class PersonalContactoIn(BaseModel):
 @app.post("/v1/personal", status_code=200)
 @limiter.limit("600/minute")
 async def guardar_personal(request: Request, payload: PersonalContactoIn):
+    await exigir_asistente(payload.cedula)
     p = await db.pool()
     await upsertar_personal(
         p, int(payload.cedula), payload.nombre, payload.cargo,
@@ -570,6 +599,7 @@ class PreTestIn(BaseModel):
 @app.post("/v1/pre-test", status_code=201)
 @limiter.limit("600/minute")
 async def guardar_pre_test(request: Request, payload: PreTestIn):
+    await exigir_asistente(payload.cedula)
     p = await db.pool()
 
     if payload.respuestas:
@@ -631,6 +661,7 @@ async def buscar_post_test(request: Request, cedula: str):
     limpia = cedula.replace(".", "").replace(" ", "").replace("-", "").strip()
     if not limpia.isdigit():
         raise HTTPException(status_code=422, detail="La cédula debe contener solo números.")
+    await exigir_asistente(limpia)
 
     p = await db.pool()
     fila = await p.fetchrow(
@@ -678,6 +709,7 @@ class PostTestIn(BaseModel):
 @app.post("/v1/post-test", status_code=201)
 @limiter.limit("600/minute")
 async def guardar_post_test(request: Request, payload: PostTestIn):
+    await exigir_asistente(payload.cedula)
     faltantes = CLAVE_POST_TEST.keys() - payload.respuestas.keys()
     if faltantes:
         raise HTTPException(
@@ -805,6 +837,7 @@ async def recibir(payload: RespuestaIn):
     Nunca llama al LLM. Latencia típica 15-30 ms, que es lo que permite
     aguantar la ráfaga de ~1500 personas del evento.
     """
+    await exigir_asistente(payload.cedula)
     cedula_hash = hmac.new(
         cfg.pepper_cedula.encode(), payload.cedula.encode(), hashlib.sha256
     ).hexdigest()
@@ -1154,14 +1187,18 @@ USUARIOS_CONTROL_PORTAL = {"control"}
 
 class PortalIn(BaseModel):
     cerrado: bool
+    # Solo tiene efecto con cerrado = false: abierto únicamente a quien tiene
+    # asistencia registrada.
+    solo_asistentes: bool = False
 
 
 @app.get("/v1/portal")
 async def portal_estado():
     """Público: lo consultan las páginas del front para mostrar el aviso de
-    cerrado. No revela nada más que el booleano."""
+    cerrado. No revela nada más que los dos booleanos."""
+    estado = await _estado_portal()
     return JSONResponse(
-        content={"cerrado": await portal_cerrado()},
+        content={"cerrado": estado["cerrado"], "solo_asistentes": estado["solo_asistentes"]},
         headers={"Cache-Control": "no-store"},
     )
 
@@ -1170,22 +1207,28 @@ async def portal_estado():
 async def admin_portal(payload: PortalIn, usuario: str = Depends(admin_actual)):
     if usuario not in USUARIOS_CONTROL_PORTAL:
         raise HTTPException(status_code=403, detail="Este usuario no puede abrir/cerrar el portal.")
+    solo_asistentes = payload.solo_asistentes and not payload.cerrado
     p = await db.pool()
     await p.execute(
         """
-        insert into config_portal (clave, cerrado, actualizado_por)
-        values ('portal', $1, $2)
+        insert into config_portal (clave, cerrado, solo_asistentes, actualizado_por)
+        values ('portal', $1, $2, $3)
         on conflict (clave) do update
-          set cerrado = excluded.cerrado, actualizado_en = now(),
-              actualizado_por = excluded.actualizado_por
+          set cerrado = excluded.cerrado, solo_asistentes = excluded.solo_asistentes,
+              actualizado_en = now(), actualizado_por = excluded.actualizado_por
         """,
-        payload.cerrado, usuario,
+        payload.cerrado, solo_asistentes, usuario,
     )
     _portal["cerrado"] = payload.cerrado
+    _portal["solo_asistentes"] = solo_asistentes
     _portal["hasta"] = time.monotonic() + _CACHE_PORTAL_SEG
-    log.info("portal %s por %s", "CERRADO" if payload.cerrado else "ABIERTO", usuario)
+    log.info(
+        "portal %s por %s",
+        "CERRADO" if payload.cerrado else "SOLO ASISTENTES" if solo_asistentes else "ABIERTO",
+        usuario,
+    )
     return JSONResponse(
-        content={"cerrado": payload.cerrado},
+        content={"cerrado": payload.cerrado, "solo_asistentes": solo_asistentes},
         headers={"X-Session-Token": _firmar_token(usuario)},
     )
 
